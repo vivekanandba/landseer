@@ -189,17 +189,26 @@ def highlight(text: str, query: str) -> str:
 # Verification
 # ---------------------------------------------------------------------------
 def checklist(
-    session: Session, prop: Property, required=REQUIRED_TYPES
+    session: Session,
+    prop: Property,
+    required=REQUIRED_TYPES,
+    as_of: Optional[date] = None,
 ) -> Dict[str, str]:
-    """Return the verification status for each required document type."""
+    """Return the verification status for each required document type.
+
+    Expiry is evaluated against ``as_of`` (default today) so a document whose
+    validity has lapsed reports ``expired`` even if its stored status was not
+    updated.
+    """
+    as_of = as_of or date.today()
     result = {}
     for doc_type in required:
-        docs = documents_of_type(session, prop, doc_type)
-        if not docs:
+        found = documents_of_type(session, prop, doc_type)
+        if not found:
             result[doc_type.value] = VerificationStatus.MISSING.value
-        elif any(d.status == VerificationStatus.ISSUES_FOUND for d in docs):
+        elif any(d.status == VerificationStatus.ISSUES_FOUND for d in found):
             result[doc_type.value] = VerificationStatus.ISSUES_FOUND.value
-        elif any(d.status == VerificationStatus.EXPIRED for d in docs):
+        elif any(d.status == VerificationStatus.EXPIRED or is_expired(d, as_of) for d in found):
             result[doc_type.value] = VerificationStatus.EXPIRED.value
         else:
             result[doc_type.value] = VerificationStatus.VERIFIED.value
