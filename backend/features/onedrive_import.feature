@@ -99,7 +99,7 @@ Feature: OneDrive Data Import
 
   Scenario: Sync folder structure to property hierarchy
     Given the folder structure:
-      ```
+      """
       /TN Lands/Thuthikadu/
         171-4-Patta.pdf
         171-4A/
@@ -109,7 +109,7 @@ Feature: OneDrive Data Import
         Neighbors/
           171-3A8/
             171-3A8-Integrated-Land-Records.pdf
-      ```
+      """
     When I run structured import
     Then the database should mirror this hierarchy:
       | type        | name      | parent          |
