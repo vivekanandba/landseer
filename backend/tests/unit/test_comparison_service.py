@@ -1,5 +1,6 @@
 """Unit tests for comparison_service: table, scoring, ranking, export."""
 import os
+from pathlib import Path
 
 from app.services import comparison_service as cmp
 from app.services import property_service as props
@@ -49,6 +50,6 @@ def test_export_pdf_is_valid_file(session, tmp_path):
     comparison = cmp.create_comparison(session, "Top", properties)
     path = os.path.join(tmp_path, "out.pdf")
     cmp.export_pdf(session, comparison, path)
-    data = open(path, "rb").read()
+    data = Path(path).read_bytes()
     assert data.startswith(b"%PDF") and data.rstrip().endswith(b"%%EOF")
     assert b"Location" in data and b"Match Score" in data
