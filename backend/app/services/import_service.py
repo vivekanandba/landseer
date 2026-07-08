@@ -54,9 +54,17 @@ def _entry_parts(entry: FileEntry):
 
 
 def _map_type(explicit: Optional[str]) -> Optional[DocumentType]:
+    """Map a folder-supplied type hint to a DocumentType.
+
+    Returns ``None`` for a missing or unrecognized hint so the caller falls back
+    to filename-based auto-categorization rather than aborting the import.
+    """
     if not explicit:
         return None
-    return DocumentType(explicit)
+    try:
+        return DocumentType(explicit)
+    except ValueError:
+        return None
 
 
 def _get_subdivision(prop: Property, name: str) -> Optional[Subdivision]:
