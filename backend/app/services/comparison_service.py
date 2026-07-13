@@ -120,15 +120,21 @@ def criterion_scores(session: Session, prop: Property) -> Dict[str, int]:
     }
 
 
-def match_score(session: Session, prop: Property, weights=DEFAULT_WEIGHTS) -> int:
-    scores = criterion_scores(session, prop)
+def weighted_average(scores: Dict[str, int], weights: Dict[str, int]) -> float:
+    """Blend per-criterion scores by their weights. Shared by match scoring and
+    the Smart Matching engine so both agree on how a headline score is formed."""
     total_weight = sum(weights.values()) or 1
-    weighted = sum(scores.get(c, 0) * w for c, w in weights.items())
-    return round(weighted / total_weight)
+    return sum(scores.get(c, 0) * w for c, w in weights.items()) / total_weight
 
 
-def match_breakdown(session: Session, prop: Property, weights=DEFAULT_WEIGHTS) -> List[dict]:
-    scores = criterion_scores(session, prop)
+def match_score(session: Session, prop: Property, weights=DEFAULT_WEIGHTS) -> int:
+    return round(weighted_average(criterion_scores(session, prop), weights))
+
+
+def match_breakdown(
+    session: Session, prop: Property, weights=DEFAULT_WEIGHTS, scores=None
+) -> List[dict]:
+    scores = scores if scores is not None else criterion_scores(session, prop)
     breakdown = []
     for criterion, weight in weights.items():
         score = scores.get(criterion, 0)
@@ -143,12 +149,10 @@ def weighted_scores(
     session: Session, properties: List[Property], weights: Dict[str, int]
 ) -> List[dict]:
     """Rank properties by a weighted blend of the supplied criteria."""
-    total_weight = sum(weights.values()) or 1
     results = []
     for prop in properties:
         scores = criterion_scores(session, prop)
-        weighted = sum(scores.get(c, 0) * w for c, w in weights.items())
-        results.append({"name": prop.name, "score": round(weighted / total_weight, 1)})
+        results.append({"name": prop.name, "score": round(weighted_average(scores, weights), 1)})
     results.sort(key=lambda r: r["score"], reverse=True)
     return results
 

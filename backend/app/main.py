@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app.api.v1 import properties
+from app.api.v1 import preferences, properties
 from app.config import get_settings
 from app.database import create_all
 
@@ -26,6 +26,7 @@ app = FastAPI(
 )
 
 app.include_router(properties.router)
+app.include_router(preferences.router)
 
 
 @app.get("/health", tags=["meta"])
