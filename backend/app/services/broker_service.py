@@ -25,6 +25,17 @@ def get_broker_by_name(session: Session, name: str) -> Optional[Broker]:
     return session.scalar(select(Broker).where(Broker.name == name))
 
 
+def get_broker(session: Session, broker_id: int) -> Broker:
+    broker = session.get(Broker, broker_id)
+    if broker is None:
+        raise BrokerNotFound(f"Broker id={broker_id} not found")
+    return broker
+
+
+def list_brokers(session: Session) -> List[Broker]:
+    return list(session.scalars(select(Broker).order_by(Broker.name)))
+
+
 def link_to_property(
     session: Session,
     broker: Broker,

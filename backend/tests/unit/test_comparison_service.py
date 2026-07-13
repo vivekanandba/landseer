@@ -3,8 +3,16 @@
 import os
 from pathlib import Path
 
+import pytest
+
 from app.services import comparison_service as cmp
 from app.services import property_service as props
+
+
+def test_duplicate_comparison_name_raises(session):
+    cmp.create_comparison(session, "Dup", [])
+    with pytest.raises(cmp.DuplicateComparison):
+        cmp.create_comparison(session, "Dup", [])
 
 
 def _seed(session):
