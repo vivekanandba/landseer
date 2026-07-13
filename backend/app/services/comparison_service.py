@@ -36,6 +36,10 @@ DEFAULT_WEIGHTS = {
 REGISTRATION_RATE = 0.07
 
 
+class DuplicateComparison(Exception):
+    pass
+
+
 # ---------------------------------------------------------------------------
 # CRUD
 # ---------------------------------------------------------------------------
@@ -45,6 +49,8 @@ def create_comparison(
     properties: List[Property],
     notes: str = "",
 ) -> Comparison:
+    if get_comparison(session, name) is not None:
+        raise DuplicateComparison(f"Comparison {name!r} already exists")
     comparison = Comparison(name=name, notes=notes)
     session.add(comparison)
     session.flush()

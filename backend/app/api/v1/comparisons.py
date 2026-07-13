@@ -6,6 +6,7 @@ import tempfile
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
+from starlette.background import BackgroundTask
 
 from app.database import get_db
 from app.schemas.comparison import ComparisonCreate, ComparisonNotes, ComparisonRead
@@ -34,7 +35,10 @@ def _property(db: Session, property_id: int):
 @router.post("", response_model=ComparisonRead, status_code=status.HTTP_201_CREATED)
 def create_comparison(payload: ComparisonCreate, db: Session = Depends(get_db)):
     properties = [_property(db, pid) for pid in payload.property_ids]
-    return cmp.create_comparison(db, payload.name, properties, notes=payload.notes)
+    try:
+        return cmp.create_comparison(db, payload.name, properties, notes=payload.notes)
+    except cmp.DuplicateComparison as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
 
 
 @router.get("/{name}", response_model=ComparisonRead)
@@ -78,4 +82,9 @@ def export_pdf(name: str, db: Session = Depends(get_db)):
     fd, path = tempfile.mkstemp(suffix=".pdf", prefix=f"comparison-{comparison.id}-")
     os.close(fd)
     cmp.export_pdf(db, comparison, path)
-    return FileResponse(path, media_type="application/pdf", filename=f"{name}.pdf")
+    return FileResponse(
+        path,
+        media_type="application/pdf",
+        filename=f"{name}.pdf",
+        background=BackgroundTask(os.remove, path),
+    )

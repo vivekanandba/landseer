@@ -6,6 +6,7 @@ import tempfile
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
+from starlette.background import BackgroundTask
 
 from app.database import get_db
 from app.schemas.survey import BoundaryCreate, BoundaryRead
@@ -73,4 +74,5 @@ def map_kml(property_id: int, db: Session = Depends(get_db)):
         path,
         media_type=kml_service.KML_MEDIA_TYPE,
         filename=f"property-{property_id}.kml",
+        background=BackgroundTask(os.remove, path),
     )

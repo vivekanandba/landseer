@@ -54,3 +54,9 @@ def test_add_property_and_notes(session):
 
 def test_unknown_comparison_404(session):
     assert client.get("/api/v1/comparisons/nope/table").status_code == 404
+
+
+def test_duplicate_comparison_409(session):
+    client.post("/api/v1/comparisons", json={"name": "Dup"})
+    again = client.post("/api/v1/comparisons", json={"name": "Dup"})
+    assert again.status_code == 409
