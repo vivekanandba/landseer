@@ -10,6 +10,7 @@ determines placement:
     "Neighbors/171-3A8/...pdf"           -> document on neighbor 171-3A8
     "Neighbors/171-3A8/"                 -> neighbor 171-3A8 (tracked, no doc)
 """
+import os
 from typing import List, Optional, Union
 
 from sqlalchemy.orm import Session
@@ -169,3 +170,54 @@ def batch_import(session: Session, folders: List[dict]) -> dict:
         "results": results,
         "summary": summary,
     }
+
+
+# ---------------------------------------------------------------------------
+# File sources — where the list of files comes from
+# ---------------------------------------------------------------------------
+class FileSource:
+    """Yields the same list-of-path-dicts that ``import_property`` consumes."""
+
+    def list_files(self) -> List[FileEntry]:  # pragma: no cover - interface
+        raise NotImplementedError
+
+
+class VirtualFileSource(FileSource):
+    """In-memory source (used by tests and the BDD suite)."""
+
+    def __init__(self, files: List[FileEntry]):
+        self._files = files
+
+    def list_files(self) -> List[FileEntry]:
+        return self._files
+
+
+class LocalFolderSource(FileSource):
+    """A real, locally-synced OneDrive folder walked from disk.
+
+    Emits paths relative to ``root`` with forward slashes so they parse
+    identically to the virtual source (``import_property`` splits on "/").
+    """
+
+    def __init__(self, root: str):
+        self.root = root
+
+    def list_files(self) -> List[FileEntry]:
+        entries: List[FileEntry] = []
+        for dirpath, _dirs, filenames in os.walk(self.root):
+            rel_dir = os.path.relpath(dirpath, self.root)
+            # Emit each subdirectory as a folder entry (trailing "/") so empty
+            # tracked folders (e.g. a neighbor with no documents yet) import too,
+            # matching VirtualFileSource. ensure_* is idempotent for non-empty dirs.
+            if rel_dir != ".":
+                entries.append({"path": rel_dir.replace(os.sep, "/") + "/"})
+            for filename in filenames:
+                full = os.path.join(dirpath, filename)
+                rel = os.path.relpath(full, self.root)
+                entries.append({"path": rel.replace(os.sep, "/")})
+        return entries
+
+
+def import_from_source(session: Session, name: str, source: FileSource) -> ImportResult:
+    """Import a property from any FileSource (virtual list, local folder, ...)."""
+    return import_property(session, name, source.list_files())
