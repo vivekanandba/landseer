@@ -51,6 +51,16 @@ def test_local_folder_source_walks_disk(session, tmp_path):
     assert result.documents_imported == 3
 
 
+def test_local_folder_source_tracks_empty_folders(session, tmp_path):
+    (tmp_path / "Neighbors" / "171-6").mkdir(parents=True)  # tracked neighbor, no docs
+    (tmp_path / "Patta.pdf").write_text("x")
+    result = importer.import_from_source(
+        session, "P", importer.LocalFolderSource(str(tmp_path))
+    )
+    assert result.neighbors_tracked == 1  # empty folder still tracked
+    assert result.documents_imported == 1
+
+
 def test_batch_import_totals(session):
     folders = [
         {"name": "Moothakkal", "files": [{"path": f"m-{i}.pdf"} for i in range(3)]},

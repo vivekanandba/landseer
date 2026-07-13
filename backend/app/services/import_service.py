@@ -205,6 +205,12 @@ class LocalFolderSource(FileSource):
     def list_files(self) -> List[FileEntry]:
         entries: List[FileEntry] = []
         for dirpath, _dirs, filenames in os.walk(self.root):
+            rel_dir = os.path.relpath(dirpath, self.root)
+            # Emit each subdirectory as a folder entry (trailing "/") so empty
+            # tracked folders (e.g. a neighbor with no documents yet) import too,
+            # matching VirtualFileSource. ensure_* is idempotent for non-empty dirs.
+            if rel_dir != ".":
+                entries.append({"path": rel_dir.replace(os.sep, "/") + "/"})
             for filename in filenames:
                 full = os.path.join(dirpath, filename)
                 rel = os.path.relpath(full, self.root)
