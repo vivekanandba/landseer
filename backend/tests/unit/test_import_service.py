@@ -36,6 +36,21 @@ def test_reimport_skips_duplicates(session):
     assert again.skipped_documents == 3
 
 
+def test_local_folder_source_walks_disk(session, tmp_path):
+    (tmp_path / "171-4A").mkdir()
+    (tmp_path / "Neighbors" / "171-3A8").mkdir(parents=True)
+    (tmp_path / "1392-171-4-Patta.pdf").write_text("x")
+    (tmp_path / "171-4A" / "171-4A-FMB.pdf").write_text("x")
+    (tmp_path / "Neighbors" / "171-3A8" / "171-3A8-Patta.pdf").write_text("x")
+
+    source = importer.LocalFolderSource(str(tmp_path))
+    result = importer.import_from_source(session, "Thuthikadu", source)
+    assert result.properties_created == 1
+    assert result.subdivisions_created == 1
+    assert result.neighbors_tracked == 1
+    assert result.documents_imported == 3
+
+
 def test_batch_import_totals(session):
     folders = [
         {"name": "Moothakkal", "files": [{"path": f"m-{i}.pdf"} for i in range(3)]},

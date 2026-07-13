@@ -8,6 +8,7 @@ from app.models.broker import Broker, BrokerProperty
 from app.models.comparison import Comparison, ComparisonItem
 from app.models.document import Document, DocumentType, VerificationStatus
 from app.models.preference import Preference
+from app.models.price_history import PriceHistory
 from app.models.property import (
     ActivityLog,
     Direction,
@@ -35,6 +36,7 @@ __all__ = [
     "DocumentType",
     "VerificationStatus",
     "Preference",
+    "PriceHistory",
     "SurveyBoundary",
     "SurveyVertex",
 ]

@@ -8,6 +8,7 @@ from typing import List, Optional
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.models.price_history import PriceHistory
 from app.models.property import (
     ActivityLog,
     Direction,
@@ -155,6 +156,21 @@ def filter_by_price(session: Session, low: float, high: float) -> List[Property]
 
 def list_properties(session: Session) -> List[Property]:
     return list(session.scalars(select(Property).order_by(Property.name)))
+
+
+def record_price(
+    session: Session, prop: Property, price: float, source: str = "manual"
+) -> PriceHistory:
+    """Record a new asking price: update the property and append price history
+    (which drives price-change alerts) and the activity timeline."""
+    price = float(price)
+    old = prop.asking_price
+    prop.asking_price = price
+    entry = PriceHistory(property_id=prop.id, price=price, source=source)
+    session.add(entry)
+    session.flush()
+    _log(session, prop, "price_changed", f"Price {old} -> {price} ({source})")
+    return entry
 
 
 def _log(session: Session, prop: Property, action: str, detail: str) -> ActivityLog:
