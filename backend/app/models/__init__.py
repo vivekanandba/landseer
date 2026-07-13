@@ -7,6 +7,7 @@ from app.models.base import Base, TimestampMixin
 from app.models.broker import Broker, BrokerProperty
 from app.models.comparison import Comparison, ComparisonItem
 from app.models.document import Document, DocumentType, VerificationStatus
+from app.models.preference import Preference
 from app.models.property import (
     ActivityLog,
     Direction,
@@ -32,4 +33,5 @@ __all__ = [
     "Document",
     "DocumentType",
     "VerificationStatus",
+    "Preference",
 ]
