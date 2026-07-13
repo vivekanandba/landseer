@@ -20,6 +20,16 @@ def test_boundary_requires_three_vertices(session):
         survey_service.add_boundary(session, prop, SQUARE[:2])
 
 
+def test_reimport_replaces_existing_boundary(session):
+    prop = props.create_property(session, name="P")
+    survey_service.add_boundary(session, prop, SQUARE)
+    shifted = [(lat + 0.001, lng) for lat, lng in SQUARE]
+    survey_service.add_boundary(session, prop, shifted)
+    mapped = survey_service.boundaries_for_map(session, prop)
+    assert len(mapped) == 1  # replaced, not duplicated
+    assert mapped[0].vertices[0].lat == shifted[0][0]
+
+
 def test_boundaries_for_map_includes_neighbors(session):
     prop = props.create_property(session, name="P")
     neighbor = props.add_neighbor(session, prop, survey_number="171-3A8")

@@ -1,4 +1,6 @@
 """Integration tests for the survey boundary / map endpoints."""
+import os
+
 from fastapi.testclient import TestClient
 
 from app.main import app
@@ -38,3 +40,13 @@ def test_boundary_requires_three_vertices(session):
 
 def test_boundary_on_missing_property_404(session):
     assert client.post("/api/v1/properties/999999/boundary", json={"vertices": SQUARE}).status_code == 404
+
+
+def test_map_kml_streams_without_persisting(session):
+    pid = _create_property("KmlProp")
+    client.post(f"/api/v1/properties/{pid}/boundary", json={"vertices": SQUARE})
+    resp = client.get(f"/api/v1/properties/{pid}/map.kml")
+    assert resp.status_code == 200
+    assert resp.text.startswith("<?xml") and "coordinates" in resp.text
+    # No artifact left under the repo data dir.
+    assert not os.path.exists(os.path.join("data", "kml", f"property-{pid}.kml"))

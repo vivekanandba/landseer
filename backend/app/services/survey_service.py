@@ -26,6 +26,20 @@ def add_boundary(
     if len(vertices) < 3:
         raise InvalidBoundary("A boundary needs at least 3 vertices")
 
+    # Re-importing replaces any existing boundary for the same subject/neighbor
+    # rather than accumulating duplicates.
+    neighbor_id = neighbor.id if neighbor else None
+    for existing in session.scalars(
+        select(SurveyBoundary).where(
+            SurveyBoundary.property_id == prop.id,
+            SurveyBoundary.neighbor_id == neighbor_id
+            if neighbor_id is not None
+            else SurveyBoundary.neighbor_id.is_(None),
+        )
+    ):
+        session.delete(existing)
+    session.flush()
+
     boundary = SurveyBoundary(
         property_id=prop.id,
         neighbor_id=neighbor.id if neighbor else None,

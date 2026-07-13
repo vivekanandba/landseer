@@ -1,11 +1,11 @@
 """Survey boundary + map export endpoints."""
 import os
+import tempfile
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
-from app.config import get_settings
 from app.database import get_db
 from app.schemas.survey import BoundaryCreate, BoundaryRead
 from app.services import kml_service
@@ -62,8 +62,13 @@ def map_geojson(property_id: int, db: Session = Depends(get_db)):
 def map_kml(property_id: int, db: Session = Depends(get_db)):
     prop = _property(db, property_id)
     boundaries = survey_service.boundaries_for_map(db, prop)
-    path = os.path.join(get_settings().data_dir, "kml", f"property-{property_id}.kml")
+    # Render to a temp file so a GET has no persistent side effect and works on a
+    # read-only application filesystem.
+    fd, path = tempfile.mkstemp(suffix=".kml", prefix=f"property-{property_id}-")
+    os.close(fd)
     kml_service.generate_kml(boundaries, path)
     return FileResponse(
-        path, media_type=kml_service.KML_MEDIA_TYPE, filename=os.path.basename(path)
+        path,
+        media_type=kml_service.KML_MEDIA_TYPE,
+        filename=f"property-{property_id}.kml",
     )
