@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+defaults:
+  run:
+    working-directory: backend
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.8"
+      - name: Install dependencies (fresh venv sidesteps the relocated bundled venv)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt ruff==0.15.21
+      - name: Lint
+        run: |
+          ruff check .
+          ruff format --check .
+      - name: Unit + integration tests (with coverage gate)
+        run: pytest -q --cov-fail-under=88
+      - name: BDD suite
+        run: behave
+
+  migrations:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: landseer
+          POSTGRES_PASSWORD: landseer
+          POSTGRES_DB: landseer
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U landseer"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      LANDSEER_DATABASE_URL: postgresql+psycopg2://landseer:landseer@localhost:5432/landseer
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Alembic upgrade -> downgrade -> upgrade (reversibility on Postgres)
+        run: |
+          python -m alembic upgrade head
+          python -m alembic downgrade base
+          python -m alembic upgrade head
