@@ -1,4 +1,5 @@
 """Smart Matching REST endpoints."""
+
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -25,11 +26,11 @@ def create_preference(payload: PreferenceCreate, db: Session = Depends(get_db)):
     try:
         return matching.create_preference(db, **payload.model_dump())
     except matching.DuplicatePreference as exc:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
     except matching.InvalidPreference as exc:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
-        )
+        ) from exc
 
 
 @router.get("/{name}", response_model=PreferenceRead)
@@ -38,8 +39,6 @@ def get_preference(name: str, db: Session = Depends(get_db)):
 
 
 @router.get("/{name}/recommendations", response_model=List[Recommendation])
-def recommendations(
-    name: str, include_disqualified: bool = True, db: Session = Depends(get_db)
-):
+def recommendations(name: str, include_disqualified: bool = True, db: Session = Depends(get_db)):
     pref = _require(db, name)
     return matching.recommend(db, pref, include_disqualified=include_disqualified)

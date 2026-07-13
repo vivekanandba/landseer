@@ -1,4 +1,5 @@
 """Automation / notifications endpoint."""
+
 from datetime import date
 from typing import Optional
 

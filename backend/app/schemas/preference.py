@@ -1,4 +1,5 @@
 """Pydantic schemas for the Smart Matching API."""
+
 from typing import Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict

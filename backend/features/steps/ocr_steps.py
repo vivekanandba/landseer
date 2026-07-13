@@ -2,6 +2,7 @@
 
 Reuses 'a property "X" exists' from property_steps.
 """
+
 from behave import given, then, when
 
 from app.services import document_service as docs

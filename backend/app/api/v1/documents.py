@@ -1,4 +1,5 @@
 """Document + OCR endpoints."""
+
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -18,7 +19,7 @@ def _property(db: Session, property_id: int):
     try:
         return props.get_property(db, property_id)
     except props.PropertyNotFound as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
 
 @router.post(
@@ -32,11 +33,11 @@ def upload_document(property_id: int, payload: DocumentUpload, db: Session = Dep
     if payload.doc_type:
         try:
             doc_type = DocumentType(payload.doc_type)
-        except ValueError:
+        except ValueError as exc:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail=f"Unknown doc_type {payload.doc_type!r}",
-            )
+            ) from exc
     return docs.upload_document(
         db, prop, payload.filename, doc_type=doc_type, issue_date=payload.issue_date
     )

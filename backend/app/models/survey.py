@@ -5,6 +5,7 @@ PostgreSQL) rather than a PostGIS geometry type, so the in-memory test path need
 no spatial extension. A neighbor's boundary is attached to the same parent
 property (via ``neighbor_id``) so it can be layered on one map.
 """
+
 from __future__ import annotations
 
 from typing import List, Optional
@@ -27,7 +28,7 @@ class SurveyBoundary(Base, TimestampMixin):
     label: Mapped[Optional[str]] = mapped_column(String(255))
     srid: Mapped[int] = mapped_column(Integer, default=4326)
 
-    vertices: Mapped[List["SurveyVertex"]] = relationship(
+    vertices: Mapped[List[SurveyVertex]] = relationship(
         back_populates="boundary",
         cascade="all, delete-orphan",
         order_by="SurveyVertex.seq",
@@ -42,11 +43,9 @@ class SurveyVertex(Base):
     __tablename__ = "survey_vertices"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    boundary_id: Mapped[int] = mapped_column(
-        ForeignKey("survey_boundaries.id", ondelete="CASCADE")
-    )
+    boundary_id: Mapped[int] = mapped_column(ForeignKey("survey_boundaries.id", ondelete="CASCADE"))
     seq: Mapped[int] = mapped_column(Integer, nullable=False)
     lat: Mapped[float] = mapped_column(Float, nullable=False)
     lng: Mapped[float] = mapped_column(Float, nullable=False)
 
-    boundary: Mapped["SurveyBoundary"] = relationship(back_populates="vertices")
+    boundary: Mapped[SurveyBoundary] = relationship(back_populates="vertices")

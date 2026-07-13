@@ -1,9 +1,10 @@
 """Step definitions for document_management.feature."""
+
 from datetime import date
 
 from behave import given, then, when
 
-from app.models.document import DocumentType, VerificationStatus
+from app.models.document import DocumentType
 from app.services import document_service as docs
 from app.services import property_service as props
 
@@ -222,9 +223,7 @@ def step_mismatch_alert(context, filename):
 @then('the verification status should be "{status}"')
 def step_verification_status(context, status):
     all_docs = docs.documents_for_property(context.session, context.current_property)
-    assert any(d.status.value == status for d in all_docs), (
-        f"no document has status {status!r}"
-    )
+    assert any(d.status.value == status for d in all_docs), f"no document has status {status!r}"
 
 
 @then("I should find all documents containing that name")
@@ -243,17 +242,13 @@ def step_results_highlight(context):
 
 @then("the property should have {count:d} Patta documents")
 def step_patta_count(context, count):
-    patta = docs.documents_of_type(
-        context.session, context.current_property, DocumentType.PATTA
-    )
+    patta = docs.documents_of_type(context.session, context.current_property, DocumentType.PATTA)
     assert len(patta) == count, f"expected {count} patta docs, got {len(patta)}"
 
 
 @then('the latest version should be "{filename}"')
 def step_latest_version(context, filename):
-    latest = docs.latest_version(
-        context.session, context.current_property, DocumentType.PATTA
-    )
+    latest = docs.latest_version(context.session, context.current_property, DocumentType.PATTA)
     assert latest is not None and latest.filename == filename, (
         f"latest is {latest.filename if latest else None!r}, expected {filename!r}"
     )
@@ -261,8 +256,6 @@ def step_latest_version(context, filename):
 
 @then("the version history should be tracked")
 def step_version_history(context):
-    patta = docs.documents_of_type(
-        context.session, context.current_property, DocumentType.PATTA
-    )
+    patta = docs.documents_of_type(context.session, context.current_property, DocumentType.PATTA)
     versions = sorted(d.version for d in patta)
     assert versions == list(range(1, len(patta) + 1)), f"unexpected versions {versions}"

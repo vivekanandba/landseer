@@ -1,6 +1,7 @@
 """Pydantic schemas for brokers."""
+
 from datetime import date
-from typing import List, Optional
+from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
 

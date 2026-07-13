@@ -1,4 +1,5 @@
 """Step definitions for property_comparison.feature."""
+
 import os
 import tempfile
 
@@ -133,9 +134,7 @@ def step_view_comparison(context):
 
 @when("I set the following criteria weights")
 def step_set_weights(context):
-    context.weights = {
-        row["criterion"]: int(row["weight"].rstrip("%")) for row in context.table
-    }
+    context.weights = {row["criterion"]: int(row["weight"].rstrip("%")) for row in context.table}
 
 
 @when("I calculate weighted scores")
@@ -159,9 +158,7 @@ def step_view_features(context):
 
 @when("I view investment comparison")
 def step_view_investment(context):
-    context.investment = cmp.investment_comparison(
-        context.session, _current_properties(context)
-    )
+    context.investment = cmp.investment_comparison(context.session, _current_properties(context))
 
 
 @when("I save the comparison")
@@ -262,7 +259,7 @@ def step_pdf_scores(context):
 
 @then("I should see which property has each feature")
 def step_features_present(context):
-    for name, features in context.features.items():
+    for features in context.features.values():
         assert {"water_source", "electricity", "road_access", "corner_plot"} <= set(features)
 
 

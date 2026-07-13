@@ -1,4 +1,5 @@
 """Survey boundary operations: store vertices and gather them for mapping."""
+
 from typing import List, Optional, Sequence, Tuple
 
 from sqlalchemy import select

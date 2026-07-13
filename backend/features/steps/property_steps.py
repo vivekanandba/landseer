@@ -1,4 +1,5 @@
 """Step definitions for property_management.feature."""
+
 from behave import given, then, when
 
 from app.models.property import ActivityLog
@@ -29,9 +30,7 @@ def step_property_exists(context, name):
 
 @given('a property "{name}" exists with status "{status}"')
 def step_property_exists_with_status(context, name, status):
-    context.current_property = svc.get_or_create_property(
-        context.session, name=name, status=status
-    )
+    context.current_property = svc.get_or_create_property(context.session, name=name, status=status)
 
 
 @given("the following properties exist")

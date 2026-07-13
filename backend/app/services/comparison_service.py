@@ -4,6 +4,7 @@ Scoring is deterministic and derived from stored property attributes so the same
 inputs always produce the same table. Presentation concerns (icons, colours) are
 computed here as plain data so any UI can render them consistently.
 """
+
 from typing import Dict, List, Optional
 
 from sqlalchemy import select

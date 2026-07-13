@@ -1,4 +1,5 @@
 """Survey boundary + map export endpoints."""
+
 import os
 import tempfile
 
@@ -8,9 +9,8 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.schemas.survey import BoundaryCreate, BoundaryRead
-from app.services import kml_service
+from app.services import kml_service, survey_service
 from app.services import property_service as props
-from app.services import survey_service
 
 router = APIRouter(prefix="/api/v1/properties", tags=["surveys"])
 
@@ -19,7 +19,7 @@ def _property(db: Session, property_id: int):
     try:
         return props.get_property(db, property_id)
     except props.PropertyNotFound as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
 
 @router.post(
@@ -49,7 +49,9 @@ def add_boundary(property_id: int, payload: BoundaryCreate, db: Session = Depend
             neighbor=neighbor,
         )
     except survey_service.InvalidBoundary as exc:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
+        ) from exc
 
 
 @router.get("/{property_id}/map.geojson")

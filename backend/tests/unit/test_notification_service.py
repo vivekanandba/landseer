@@ -1,4 +1,5 @@
 """Unit tests for notification_service and property_service.record_price."""
+
 from datetime import date
 
 from app.models.document import DocumentType

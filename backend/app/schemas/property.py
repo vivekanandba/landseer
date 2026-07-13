@@ -1,4 +1,5 @@
 """Pydantic schemas for the property aggregate."""
+
 from datetime import datetime
 from typing import List, Optional
 

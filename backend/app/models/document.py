@@ -1,4 +1,5 @@
 """Document model: files attached to a property, subdivision or neighbor."""
+
 from __future__ import annotations
 
 import enum
@@ -6,7 +7,7 @@ from datetime import date
 from typing import Optional
 
 from sqlalchemy import Date, Enum, ForeignKey, Integer, String, Text
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, TimestampMixin
 

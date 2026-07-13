@@ -1,6 +1,6 @@
 """Unit tests for import_service: placement, dedupe, batch, reporting."""
+
 from app.services import import_service as importer
-from app.services import property_service as props
 
 
 def test_import_places_subdivisions_and_neighbors(session):
@@ -54,9 +54,7 @@ def test_local_folder_source_walks_disk(session, tmp_path):
 def test_local_folder_source_tracks_empty_folders(session, tmp_path):
     (tmp_path / "Neighbors" / "171-6").mkdir(parents=True)  # tracked neighbor, no docs
     (tmp_path / "Patta.pdf").write_text("x")
-    result = importer.import_from_source(
-        session, "P", importer.LocalFolderSource(str(tmp_path))
-    )
+    result = importer.import_from_source(session, "P", importer.LocalFolderSource(str(tmp_path)))
     assert result.neighbors_tracked == 1  # empty folder still tracked
     assert result.documents_imported == 1
 

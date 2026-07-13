@@ -10,6 +10,7 @@ determines placement:
     "Neighbors/171-3A8/...pdf"           -> document on neighbor 171-3A8
     "Neighbors/171-3A8/"                 -> neighbor 171-3A8 (tracked, no doc)
 """
+
 import os
 from typing import List, Optional, Union
 

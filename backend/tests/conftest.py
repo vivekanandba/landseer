@@ -1,4 +1,5 @@
 """Shared pytest fixtures: an isolated in-memory database session per test."""
+
 import pytest
 
 from app.database import create_all, drop_all, get_sessionmaker, init_engine

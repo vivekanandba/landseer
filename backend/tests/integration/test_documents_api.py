@@ -1,4 +1,5 @@
 """Integration tests for document upload/list and OCR parse endpoints."""
+
 from fastapi.testclient import TestClient
 
 from app.main import app

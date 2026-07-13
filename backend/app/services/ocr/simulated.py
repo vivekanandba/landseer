@@ -1,4 +1,5 @@
 """Simulated OCR provider — returns injected fields, no engine required."""
+
 import os
 from typing import Dict, Optional
 
@@ -9,7 +10,9 @@ class SimulatedOcrProvider:
     Used by tests and any environment without a real OCR engine configured.
     """
 
-    def __init__(self, by_filename: Optional[Dict[str, dict]] = None, default: Optional[dict] = None):
+    def __init__(
+        self, by_filename: Optional[Dict[str, dict]] = None, default: Optional[dict] = None
+    ):
         self._by_filename = by_filename or {}
         self._default = default or {}
 

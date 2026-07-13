@@ -1,4 +1,5 @@
 """Buyer preference / requirements used by the Smart Matching engine."""
+
 from __future__ import annotations
 
 from typing import List, Optional

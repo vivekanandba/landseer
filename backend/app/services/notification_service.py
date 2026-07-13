@@ -6,6 +6,7 @@ and testable in-memory. Delivery is abstracted behind ``Notifier`` — the defau
 ``LogNotifier`` just captures messages; SMTP/email is a later, credential-gated
 notifier.
 """
+
 from datetime import date, timedelta
 from typing import List, Optional
 
@@ -48,13 +49,14 @@ def expiring_documents(
         if expires is None or expires > horizon:
             continue
         state = "expired" if expires < as_of else "expiring soon"
+        message = f"{doc.filename} ({doc.doc_type.value}) {state} on {expires.isoformat()}"
         alerts.append(
             {
                 "document_id": doc.id,
                 "property_id": doc.property_id,
                 "filename": doc.filename,
                 "expires_on": expires.isoformat(),
-                "message": f"{doc.filename} ({doc.doc_type.value}) {state} on {expires.isoformat()}",
+                "message": message,
             }
         )
     return alerts
@@ -87,16 +89,14 @@ def price_change_alerts(session: Session, threshold_pct: float = 5.0) -> List[di
                 "old_price": old_price,
                 "new_price": new_price,
                 "change_pct": round(change_pct, 1),
-                "message": f"{prop.name}: price {direction} {abs(round(change_pct,1))}% "
+                "message": f"{prop.name}: price {direction} {abs(round(change_pct, 1))}% "
                 f"({old_price:.0f} -> {new_price:.0f})",
             }
         )
     return alerts
 
 
-def follow_ups(
-    session: Session, as_of: Optional[date] = None, idle_days: int = 30
-) -> List[dict]:
+def follow_ups(session: Session, as_of: Optional[date] = None, idle_days: int = 30) -> List[dict]:
     """Properties still being evaluated with no activity in ``idle_days``."""
     as_of = as_of or date.today()
     alerts = []

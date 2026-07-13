@@ -1,4 +1,5 @@
 """Integration test for the notifications endpoint."""
+
 from fastapi.testclient import TestClient
 
 from app.main import app

@@ -10,6 +10,7 @@ zero setup. Override with ``LANDSEER_DATABASE_URL`` to point at Postgres.
 To then explore the API interactively against the same database, see
 ``docs/development/running-locally.md``.
 """
+
 import os
 import sys
 
@@ -25,18 +26,47 @@ from app.services import matching_service as matching  # noqa: E402
 from app.services import property_service as props  # noqa: E402
 
 PROPERTIES = [
-    dict(name="Thuthikadu 171-4", location="Thuthikadu", area_sqft=12500,
-         price_total=1850000, price_per_sqft=148, water_source="Yes",
-         electricity="Yes", road_access="Yes"),
-    dict(name="Moothakkal Plot", location="Moothakkal", area_sqft=10800,
-         price_total=1600000, price_per_sqft=148, water_source="No",
-         electricity="Yes", road_access="Yes"),
-    dict(name="Kotikal Forest", location="Kathalampattu", area_sqft=112000,
-         price_total=3500000, price_per_sqft=31, water_source="Yes",
-         electricity="Nearby", road_access="Kutcha"),
-    dict(name="Irumbli Farm", location="Irumbli", area_sqft=43560,
-         price_total=2600000, price_per_sqft=60, water_source="Yes",
-         electricity="Yes", road_access="Yes", corner_plot=True),
+    dict(
+        name="Thuthikadu 171-4",
+        location="Thuthikadu",
+        area_sqft=12500,
+        price_total=1850000,
+        price_per_sqft=148,
+        water_source="Yes",
+        electricity="Yes",
+        road_access="Yes",
+    ),
+    dict(
+        name="Moothakkal Plot",
+        location="Moothakkal",
+        area_sqft=10800,
+        price_total=1600000,
+        price_per_sqft=148,
+        water_source="No",
+        electricity="Yes",
+        road_access="Yes",
+    ),
+    dict(
+        name="Kotikal Forest",
+        location="Kathalampattu",
+        area_sqft=112000,
+        price_total=3500000,
+        price_per_sqft=31,
+        water_source="Yes",
+        electricity="Nearby",
+        road_access="Kutcha",
+    ),
+    dict(
+        name="Irumbli Farm",
+        location="Irumbli",
+        area_sqft=43560,
+        price_total=2600000,
+        price_per_sqft=60,
+        water_source="Yes",
+        electricity="Yes",
+        road_access="Yes",
+        corner_plot=True,
+    ),
 ]
 
 
@@ -57,7 +87,10 @@ def main():
     pref = matching.get_preference(session, "My Ideal Plot")
     if pref is None:
         pref = matching.create_preference(
-            session, name="My Ideal Plot", budget_max=3000000, size_min_sqft=10000,
+            session,
+            name="My Ideal Plot",
+            budget_max=3000000,
+            size_min_sqft=10000,
             locations=["Thuthikadu", "Moothakkal", "Irumbli"],
             required_features=["water_source"],
         )

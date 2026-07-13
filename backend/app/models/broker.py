@@ -1,4 +1,5 @@
 """Broker aggregate and the broker<->property association."""
+
 from __future__ import annotations
 
 from datetime import date
@@ -21,7 +22,7 @@ class Broker(Base, TimestampMixin):
     areas_covered: Mapped[Optional[str]] = mapped_column(String(512))
     commission_rate: Mapped[float] = mapped_column(Float, default=0.0)
 
-    listings: Mapped[List["BrokerProperty"]] = relationship(
+    listings: Mapped[List[BrokerProperty]] = relationship(
         back_populates="broker", cascade="all, delete-orphan"
     )
 
@@ -47,4 +48,4 @@ class BrokerProperty(Base, TimestampMixin):
     asking_price: Mapped[Optional[float]] = mapped_column(Float)
     broker_notes: Mapped[Optional[str]] = mapped_column(Text)
 
-    broker: Mapped["Broker"] = relationship(back_populates="listings")
+    broker: Mapped[Broker] = relationship(back_populates="listings")

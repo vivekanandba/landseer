@@ -1,4 +1,5 @@
 """Append-only history of a property's asking price, for change alerts."""
+
 from __future__ import annotations
 
 from datetime import datetime

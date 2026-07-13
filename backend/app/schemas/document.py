@@ -1,6 +1,7 @@
 """Pydantic schemas for documents and OCR."""
+
 from datetime import date
-from typing import Dict, Optional
+from typing import Optional
 
 from pydantic import BaseModel, ConfigDict
 

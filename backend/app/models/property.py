@@ -1,4 +1,5 @@
 """Property aggregate: Property, Subdivision, Neighbor and the activity timeline."""
+
 from __future__ import annotations
 
 import enum
@@ -59,13 +60,13 @@ class Property(Base, TimestampMixin):
 
     notes: Mapped[Optional[str]] = mapped_column(Text)
 
-    subdivisions: Mapped[List["Subdivision"]] = relationship(
+    subdivisions: Mapped[List[Subdivision]] = relationship(
         back_populates="property", cascade="all, delete-orphan"
     )
-    neighbors: Mapped[List["Neighbor"]] = relationship(
+    neighbors: Mapped[List[Neighbor]] = relationship(
         back_populates="property", cascade="all, delete-orphan"
     )
-    activity_logs: Mapped[List["ActivityLog"]] = relationship(
+    activity_logs: Mapped[List[ActivityLog]] = relationship(
         back_populates="property", cascade="all, delete-orphan", order_by="ActivityLog.created_at"
     )
 
@@ -86,7 +87,7 @@ class Subdivision(Base, TimestampMixin):
     survey_number_full: Mapped[Optional[str]] = mapped_column(String(64), index=True)
     area_sqft: Mapped[Optional[float]] = mapped_column(Float)
 
-    property: Mapped["Property"] = relationship(back_populates="subdivisions")
+    property: Mapped[Property] = relationship(back_populates="subdivisions")
 
 
 class Neighbor(Base, TimestampMixin):
@@ -101,7 +102,7 @@ class Neighbor(Base, TimestampMixin):
     notes: Mapped[Optional[str]] = mapped_column(Text)
     shared_boundary: Mapped[bool] = mapped_column(default=False)
 
-    property: Mapped["Property"] = relationship(back_populates="neighbors")
+    property: Mapped[Property] = relationship(back_populates="neighbors")
 
 
 class ActivityLog(Base):
@@ -117,4 +118,4 @@ class ActivityLog(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
-    property: Mapped["Property"] = relationship(back_populates="activity_logs")
+    property: Mapped[Property] = relationship(back_populates="activity_logs")

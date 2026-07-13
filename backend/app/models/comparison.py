@@ -1,4 +1,5 @@
 """Comparison aggregate: a saved side-by-side of several properties."""
+
 from __future__ import annotations
 
 from typing import List
@@ -16,7 +17,7 @@ class Comparison(Base, TimestampMixin):
     name: Mapped[str] = mapped_column(String(255), index=True, nullable=False)
     notes: Mapped[str] = mapped_column(Text, default="")
 
-    items: Mapped[List["ComparisonItem"]] = relationship(
+    items: Mapped[List[ComparisonItem]] = relationship(
         back_populates="comparison",
         cascade="all, delete-orphan",
         order_by="ComparisonItem.id",
@@ -27,11 +28,7 @@ class ComparisonItem(Base):
     __tablename__ = "comparison_items"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    comparison_id: Mapped[int] = mapped_column(
-        ForeignKey("comparisons.id", ondelete="CASCADE")
-    )
-    property_id: Mapped[int] = mapped_column(
-        ForeignKey("properties.id", ondelete="CASCADE")
-    )
+    comparison_id: Mapped[int] = mapped_column(ForeignKey("comparisons.id", ondelete="CASCADE"))
+    property_id: Mapped[int] = mapped_column(ForeignKey("properties.id", ondelete="CASCADE"))
 
-    comparison: Mapped["Comparison"] = relationship(back_populates="items")
+    comparison: Mapped[Comparison] = relationship(back_populates="items")
