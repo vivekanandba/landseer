@@ -131,8 +131,10 @@ def match_score(session: Session, prop: Property, weights=DEFAULT_WEIGHTS) -> in
     return round(weighted_average(criterion_scores(session, prop), weights))
 
 
-def match_breakdown(session: Session, prop: Property, weights=DEFAULT_WEIGHTS) -> List[dict]:
-    scores = criterion_scores(session, prop)
+def match_breakdown(
+    session: Session, prop: Property, weights=DEFAULT_WEIGHTS, scores=None
+) -> List[dict]:
+    scores = scores if scores is not None else criterion_scores(session, prop)
     breakdown = []
     for criterion, weight in weights.items():
         score = scores.get(criterion, 0)

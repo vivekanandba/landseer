@@ -17,13 +17,30 @@ from app.services import property_service as props
 
 # Feature attributes a preference may require, and how "present" is judged.
 _BOOLEAN_FEATURES = {"corner_plot"}
+ALLOWED_FEATURES = {"water_source", "electricity", "road_access", "corner_plot"}
 
 
 class PreferenceNotFound(Exception):
     pass
 
 
+class DuplicatePreference(Exception):
+    pass
+
+
+class InvalidPreference(Exception):
+    pass
+
+
 def create_preference(session: Session, **fields) -> Preference:
+    name = fields.get("name")
+    if name and get_preference(session, name) is not None:
+        raise DuplicatePreference(f"Preference {name!r} already exists")
+    unknown = set(fields.get("required_features") or []) - ALLOWED_FEATURES
+    if unknown:
+        raise InvalidPreference(
+            f"Unknown required features {sorted(unknown)}; allowed: {sorted(ALLOWED_FEATURES)}"
+        )
     pref = Preference(**fields)
     session.add(pref)
     session.flush()
@@ -47,7 +64,7 @@ def score_property(session: Session, pref: Preference, prop: Property) -> dict:
     scores = cmp.criterion_scores(session, prop)
     return {
         "score": round(cmp.weighted_average(scores, weights)),
-        "breakdown": cmp.match_breakdown(session, prop, weights),
+        "breakdown": cmp.match_breakdown(session, prop, weights, scores=scores),
     }
 
 

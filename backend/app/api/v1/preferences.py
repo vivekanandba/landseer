@@ -22,7 +22,14 @@ def _require(db: Session, name: str):
 
 @router.post("", response_model=PreferenceRead, status_code=status.HTTP_201_CREATED)
 def create_preference(payload: PreferenceCreate, db: Session = Depends(get_db)):
-    return matching.create_preference(db, **payload.model_dump())
+    try:
+        return matching.create_preference(db, **payload.model_dump())
+    except matching.DuplicatePreference as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
+    except matching.InvalidPreference as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
+        )
 
 
 @router.get("/{name}", response_model=PreferenceRead)

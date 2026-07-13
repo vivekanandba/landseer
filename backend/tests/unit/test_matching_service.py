@@ -1,4 +1,6 @@
 """Unit tests for matching_service: scoring, deal-breakers, ranking, persistence."""
+import pytest
+
 from app.services import matching_service as matching
 from app.services import property_service as props
 
@@ -67,6 +69,17 @@ def test_exclude_disqualified(session):
     recs = matching.recommend(session, pref, include_disqualified=False)
     assert all(not r["disqualified"] for r in recs)
     assert "Pricey" not in {r["name"] for r in recs}
+
+
+def test_duplicate_preference_name_raises(session):
+    matching.create_preference(session, name="Dup")
+    with pytest.raises(matching.DuplicatePreference):
+        matching.create_preference(session, name="Dup")
+
+
+def test_unknown_required_feature_rejected(session):
+    with pytest.raises(matching.InvalidPreference):
+        matching.create_preference(session, name="Bad", required_features=["poool"])
 
 
 def test_apply_scores_persists_match_score(session):

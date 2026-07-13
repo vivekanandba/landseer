@@ -33,3 +33,16 @@ def test_create_and_recommend_flow(session):
 
 def test_unknown_preference_returns_404(session):
     assert client.get("/api/v1/preferences/nope/recommendations").status_code == 404
+
+
+def test_duplicate_preference_returns_409(session):
+    client.post("/api/v1/preferences", json={"name": "Dup"})
+    again = client.post("/api/v1/preferences", json={"name": "Dup"})
+    assert again.status_code == 409
+
+
+def test_invalid_required_feature_returns_422(session):
+    resp = client.post(
+        "/api/v1/preferences", json={"name": "Bad", "required_features": ["poool"]}
+    )
+    assert resp.status_code == 422
