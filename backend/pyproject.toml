@@ -23,4 +23,6 @@ ignore = ["B008"]  # FastAPI uses `Depends(...)` as a default value by design.
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
-addopts = "-ra --cov=app --cov-report=term-missing --cov-fail-under=88"
+# Coverage is reported on every run; the fail-under gate is enforced in CI
+# (so partial local runs like `pytest tests/unit/test_x.py` don't spuriously fail).
+addopts = "-ra --cov=app --cov-report=term-missing"
