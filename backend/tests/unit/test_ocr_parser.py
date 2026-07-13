@@ -25,6 +25,12 @@ def test_survey_number_falls_back_to_pattern():
     assert fields["survey_number"] == "171-4D"
 
 
+def test_survey_after_a_period_is_not_lost():
+    # A filename-style extractor would strip everything after the last ".".
+    fields = extract_fields("Plot located in Thuthikadu. Survey plot 171-4")
+    assert fields["survey_number"] == "171-4"
+
+
 def test_missing_fields_are_omitted():
     fields = extract_fields("no useful labels here")
     assert "owner_name" not in fields and "village" not in fields
