@@ -227,4 +227,11 @@ def downgrade() -> None:
     op.drop_table('comparisons')
     op.drop_index(op.f('ix_brokers_name'), table_name='brokers')
     op.drop_table('brokers')
+    # On PostgreSQL the native ENUM types created implicitly by create_table are
+    # not removed by drop_table; drop them so a re-upgrade doesn't fail with
+    # "type already exists". (No-op on SQLite, which has no native enum types.)
+    bind = op.get_bind()
+    if bind.dialect.name == "postgresql":
+        for enum_name in ("propertystatus", "direction", "documenttype", "verificationstatus"):
+            sa.Enum(name=enum_name).drop(bind, checkfirst=True)
     # ### end Alembic commands ###
