@@ -36,7 +36,21 @@ Useful endpoints:
 Seed the demo data first (step 1) so the recommendations endpoint has something
 to rank, or create properties via `POST /api/v1/properties`.
 
+## Database migrations (Alembic)
+
+`DEBUG=true` auto-creates tables for local convenience. For a real (Postgres)
+database, bootstrap and evolve the schema with Alembic instead — run from `backend/`:
+
+```bash
+LANDSEER_DATABASE_URL=postgresql+psycopg2://user:pass@localhost/landseer \
+  venv/bin/python -m alembic upgrade head
+```
+
+- Generate a new migration after changing models:
+  `venv/bin/python -m alembic revision --autogenerate -m "describe change"`.
+- The test suite does **not** use Alembic — it builds the schema via `create_all`
+  on in-memory SQLite (so migrations are a Postgres/production concern only).
+
 ## Notes
 
-- Point `LANDSEER_DATABASE_URL` at Postgres (e.g. `postgresql+psycopg2://user:pass@localhost/landseer`) to run against a real database; production bootstraps schema via Alembic rather than `DEBUG` create-all (see the roadmap).
 - Env vars use the `LANDSEER_` prefix (see `app/config.py`).
