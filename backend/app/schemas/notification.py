@@ -1,4 +1,5 @@
 """Pydantic schemas for the automation / notifications API."""
+
 from typing import List, Optional
 
 from pydantic import BaseModel

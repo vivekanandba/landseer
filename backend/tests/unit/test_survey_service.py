@@ -1,4 +1,5 @@
 """Unit tests for survey_service: boundary storage and map gathering."""
+
 import pytest
 
 from app.services import property_service as props
@@ -37,5 +38,5 @@ def test_boundaries_for_map_includes_neighbors(session):
     survey_service.add_boundary(session, prop, SQUARE, neighbor=neighbor)
     mapped = survey_service.boundaries_for_map(session, prop)
     assert len(mapped) == 2
-    assert mapped[0].neighbor_id is None      # subject first
+    assert mapped[0].neighbor_id is None  # subject first
     assert mapped[1].neighbor_id == neighbor.id

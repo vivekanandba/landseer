@@ -1,4 +1,5 @@
 """OCR provider interface."""
+
 from typing import Dict
 
 try:  # Protocol is stdlib on 3.8+
@@ -11,5 +12,4 @@ class OcrProvider(Protocol):
     """Extract fields (survey_number/owner_name/extent/village/text) from a
     document identified by ``source`` (a filename or path)."""
 
-    def extract(self, source: str) -> Dict[str, str]:
-        ...
+    def extract(self, source: str) -> Dict[str, str]: ...

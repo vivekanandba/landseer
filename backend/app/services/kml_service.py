@@ -3,6 +3,7 @@
 KML (and GeoJSON) order coordinates **longitude, latitude** — the opposite of the
 (lat, lng) tuples used elsewhere — so that ordering is applied deliberately here.
 """
+
 import os
 from typing import List
 from xml.etree.ElementTree import Element, ElementTree, SubElement
@@ -44,9 +45,7 @@ def build_kml(boundaries: List[SurveyBoundary]) -> Element:
     for boundary in boundaries:
         placemark = SubElement(doc, "Placemark")
         SubElement(placemark, "name").text = boundary.label or "boundary"
-        SubElement(placemark, "styleUrl").text = (
-            "#neighbor" if boundary.is_neighbor else "#subject"
-        )
+        SubElement(placemark, "styleUrl").text = "#neighbor" if boundary.is_neighbor else "#subject"
         polygon = SubElement(placemark, "Polygon")
         outer = SubElement(polygon, "outerBoundaryIs")
         ring = SubElement(outer, "LinearRing")
@@ -87,7 +86,5 @@ def geojson(boundaries: List[SurveyBoundary]) -> dict:
 def upload_to_mymaps(kml_path: str, credentials=None):  # pragma: no cover - gated stub
     """Upload a KML to Google My Maps. Requires OAuth credentials; wired later."""
     if not credentials:
-        raise RuntimeError(
-            "Google My Maps upload requires credentials (not yet configured)."
-        )
+        raise RuntimeError("Google My Maps upload requires credentials (not yet configured).")
     raise NotImplementedError("Google My Maps upload is not implemented yet.")

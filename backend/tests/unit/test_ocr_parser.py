@@ -1,4 +1,5 @@
 """Unit tests for the OCR field parser (engine-independent)."""
+
 from app.services.ocr import extract_fields
 
 PATTA_TEXT = """

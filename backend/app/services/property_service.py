@@ -3,6 +3,7 @@
 The service layer is intentionally free of FastAPI/HTTP concerns so it can be
 driven directly from BDD step definitions and unit tests, and reused by the API.
 """
+
 from typing import List, Optional
 
 from sqlalchemy import select

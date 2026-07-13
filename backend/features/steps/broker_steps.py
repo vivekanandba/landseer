@@ -1,4 +1,5 @@
 """Step definitions for broker_management.feature."""
+
 from datetime import date
 
 from behave import given, then, when
@@ -46,9 +47,7 @@ def step_following_brokers_exist(context):
 
 @given('a broker "{name}" with commission rate {rate:g}%')
 def step_broker_with_rate(context, name, rate):
-    context.current_broker = brokers.create_broker(
-        context.session, name=name, commission_rate=rate
-    )
+    context.current_broker = brokers.create_broker(context.session, name=name, commission_rate=rate)
 
 
 @given('a property "{name}" with negotiated price {price:d}')
@@ -70,7 +69,7 @@ def step_broker_has_shown(context, count):
 @given('{count:d} property is marked as "{status}"')
 def step_mark_properties(context, count, status):
     already = context._marked if "_marked" in context else 0
-    for prop in context.shown_properties[already:already + count]:
+    for prop in context.shown_properties[already : already + count]:
         props.update_status(context.session, prop, status)
     context._marked = already + count
 

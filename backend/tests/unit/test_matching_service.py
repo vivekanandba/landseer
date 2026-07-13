@@ -1,4 +1,5 @@
 """Unit tests for matching_service: scoring, deal-breakers, ranking, persistence."""
+
 import pytest
 
 from app.services import matching_service as matching
@@ -7,12 +8,22 @@ from app.services import property_service as props
 
 def _seed(session):
     cheap = props.create_property(
-        session, name="Cheap PerSqft", location="Thuthikadu",
-        area_sqft=100000, price_total=3000000, price_per_sqft=30, status="evaluating",
+        session,
+        name="Cheap PerSqft",
+        location="Thuthikadu",
+        area_sqft=100000,
+        price_total=3000000,
+        price_per_sqft=30,
+        status="evaluating",
     )
     dear = props.create_property(
-        session, name="Dear PerSqft", location="Thuthikadu",
-        area_sqft=10000, price_total=2000000, price_per_sqft=200, status="evaluating",
+        session,
+        name="Dear PerSqft",
+        location="Thuthikadu",
+        area_sqft=10000,
+        price_total=2000000,
+        price_per_sqft=200,
+        status="evaluating",
     )
     return cheap, dear
 
@@ -49,17 +60,15 @@ def test_location_deal_breaker(session):
 
 
 def test_recommend_ranks_qualified_first_then_score(session):
-    cheap, dear = _seed(session)
-    pricey = props.create_property(session, name="Pricey", asking_price=9000000, price_per_sqft=400)
+    _seed(session)
+    props.create_property(session, name="Pricey", asking_price=9000000, price_per_sqft=400)
     pref = matching.create_preference(session, name="Value", budget_max=4000000)
     recs = matching.recommend(session, pref)
     # Pricey exceeds budget -> disqualified -> ranked last.
     assert recs[-1]["name"] == "Pricey" and recs[-1]["disqualified"]
     qualified = [r for r in recs if not r["disqualified"]]
     assert qualified[0]["name"] == "Cheap PerSqft"  # best price-per-sqft wins
-    assert [r["score"] for r in qualified] == sorted(
-        (r["score"] for r in qualified), reverse=True
-    )
+    assert [r["score"] for r in qualified] == sorted((r["score"] for r in qualified), reverse=True)
 
 
 def test_exclude_disqualified(session):

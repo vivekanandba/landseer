@@ -4,6 +4,7 @@ Settings are loaded from environment variables (and an optional ``.env`` file).
 Tests override ``database_url`` to point at an in-memory SQLite database so the
 suite runs without a live PostgreSQL/PostGIS instance.
 """
+
 from functools import lru_cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict

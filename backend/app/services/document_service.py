@@ -4,6 +4,7 @@ Like the other services this layer is free of HTTP concerns so it can be driven
 from BDD steps, unit tests and the API alike. "OCR" here is simulated: callers
 supply the extracted fields (real OCR would run out of process).
 """
+
 import re
 from collections import Counter
 from datetime import date
@@ -49,9 +50,7 @@ def categorize(filename: str) -> DocumentType:
         return DocumentType.FMB
     if "deed" in tokens:
         return DocumentType.DEED
-    if ("record" in name or "records" in name) and (
-        "land" in tokens or "integrated" in tokens
-    ):
+    if ("record" in name or "records" in name) and ("land" in tokens or "integrated" in tokens):
         return DocumentType.LAND_RECORD
     if "ec" in tokens:
         return DocumentType.EC
@@ -122,9 +121,7 @@ def _apply_ocr_fields(session: Session, doc: Document, fields: Dict[str, str]) -
         doc.extracted_extent = fields["extent"]
     if "village" in fields:
         doc.extracted_village = fields["village"]
-    doc.ocr_text = fields.get("text") or " ".join(
-        str(v) for k, v in fields.items() if k != "text"
-    )
+    doc.ocr_text = fields.get("text") or " ".join(str(v) for k, v in fields.items() if k != "text")
     doc.ocr_status = "complete"
     session.flush()
     return doc
@@ -155,40 +152,28 @@ def process_queue(session: Session, provider) -> int:
 def documents_for_property(session: Session, prop: Property) -> List[Document]:
     return list(
         session.scalars(
-            select(Document)
-            .where(Document.property_id == prop.id)
-            .order_by(Document.version)
+            select(Document).where(Document.property_id == prop.id).order_by(Document.version)
         )
     )
 
 
-def documents_of_type(
-    session: Session, prop: Property, doc_type: DocumentType
-) -> List[Document]:
+def documents_of_type(session: Session, prop: Property, doc_type: DocumentType) -> List[Document]:
     return [d for d in documents_for_property(session, prop) if d.doc_type == doc_type]
 
 
 def documents_for_subdivision(session: Session, subdivision: Subdivision) -> List[Document]:
-    return list(
-        session.scalars(
-            select(Document).where(Document.subdivision_id == subdivision.id)
-        )
-    )
+    return list(session.scalars(select(Document).where(Document.subdivision_id == subdivision.id)))
 
 
 def documents_for_neighbor(session: Session, neighbor: Neighbor) -> List[Document]:
-    return list(
-        session.scalars(select(Document).where(Document.neighbor_id == neighbor.id))
-    )
+    return list(session.scalars(select(Document).where(Document.neighbor_id == neighbor.id)))
 
 
 def _count_of_type(session: Session, prop: Property, doc_type: DocumentType) -> int:
     return len(documents_of_type(session, prop, doc_type))
 
 
-def latest_version(
-    session: Session, prop: Property, doc_type: DocumentType
-) -> Optional[Document]:
+def latest_version(session: Session, prop: Property, doc_type: DocumentType) -> Optional[Document]:
     docs = documents_of_type(session, prop, doc_type)
     return max(docs, key=lambda d: d.version) if docs else None
 
@@ -196,9 +181,7 @@ def latest_version(
 def search_by_ocr(session: Session, query: str) -> List[Document]:
     needle = query.lower()
     return [
-        d
-        for d in session.scalars(select(Document))
-        if d.ocr_text and needle in d.ocr_text.lower()
+        d for d in session.scalars(select(Document)) if d.ocr_text and needle in d.ocr_text.lower()
     ]
 
 

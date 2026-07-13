@@ -3,6 +3,7 @@
 Importing this package registers every model on ``Base.metadata`` so that
 ``create_all`` sees the full schema.
 """
+
 from app.models.base import Base, TimestampMixin
 from app.models.broker import Broker, BrokerProperty
 from app.models.comparison import Comparison, ComparisonItem

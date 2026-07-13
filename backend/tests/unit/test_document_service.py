@@ -1,4 +1,5 @@
 """Unit tests for document_service: categorization, OCR, verification, history."""
+
 from datetime import date
 
 import pytest

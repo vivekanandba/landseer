@@ -1,4 +1,5 @@
 """Step definitions for onedrive_import.feature."""
+
 from behave import given, then, when
 
 from app.models.document import DocumentType
@@ -16,11 +17,19 @@ def _parent_name(path):
 
 
 def _non_photo_docs(context, prop):
-    return [d for d in docs.documents_for_property(context.session, prop) if d.doc_type != DocumentType.PHOTO]
+    return [
+        d
+        for d in docs.documents_for_property(context.session, prop)
+        if d.doc_type != DocumentType.PHOTO
+    ]
 
 
 def _photo_docs(context, prop):
-    return [d for d in docs.documents_for_property(context.session, prop) if d.doc_type == DocumentType.PHOTO]
+    return [
+        d
+        for d in docs.documents_for_property(context.session, prop)
+        if d.doc_type == DocumentType.PHOTO
+    ]
 
 
 def _parse_tree(text):
@@ -148,9 +157,7 @@ def step_run_import_named(context, name):
 @when("I run the import")
 @when("I run structured import")
 def step_run_import(context):
-    context.result = importer.import_property(
-        context.session, context.import_name, context.files
-    )
+    context.result = importer.import_property(context.session, context.import_name, context.files)
     context.current_property = context.result.property
 
 
@@ -163,8 +170,7 @@ def step_run_import_again(context, name):
 @when("I run survey number extraction")
 def step_run_survey_extraction(context):
     context.extracted = {
-        filename: docs.extract_survey_number(filename)
-        for filename, _ in context.survey_rows
+        filename: docs.extract_survey_number(filename) for filename, _ in context.survey_rows
     }
 
 
@@ -221,7 +227,10 @@ def step_property_photo_count(context, count):
 
 @then('documents should be categorized as "{first}", "{second}", and "{third}"')
 def step_documents_categorized_as(context, first, second, third):
-    types = {d.doc_type.value for d in docs.documents_for_property(context.session, context.current_property)}
+    types = {
+        d.doc_type.value
+        for d in docs.documents_for_property(context.session, context.current_property)
+    }
     assert {first, second, third} <= types, f"expected {{{first},{second},{third}}} in {types}"
 
 
@@ -329,7 +338,9 @@ def step_mirror_hierarchy(context):
             assert any(s.name == name for s in prop.subdivisions), f"subdivision {name!r} missing"
             assert parent == prop.name
         elif kind == "neighbor":
-            assert any(n.survey_number == name for n in prop.neighbors), f"neighbor {name!r} missing"
+            assert any(n.survey_number == name for n in prop.neighbors), (
+                f"neighbor {name!r} missing"
+            )
             assert parent == prop.name
 
 
@@ -338,6 +349,4 @@ def step_import_report(context):
     report = context.result.report()
     for row in context.table:
         metric, value = row["metric"], int(row["value"])
-        assert report[metric] == value, (
-            f"{metric}: expected {value}, got {report[metric]}"
-        )
+        assert report[metric] == value, f"{metric}: expected {value}, got {report[metric]}"

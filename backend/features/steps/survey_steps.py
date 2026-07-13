@@ -1,13 +1,13 @@
 """Step definitions for survey_visualization.feature."""
+
 import os
 import tempfile
 from xml.etree.ElementTree import fromstring
 
 from behave import given, then, when
 
-from app.services import kml_service
+from app.services import kml_service, survey_service
 from app.services import property_service as props
-from app.services import survey_service
 
 SQUARE = [(12.9001, 79.1001), (12.9005, 79.1001), (12.9005, 79.1010), (12.9001, 79.1010)]
 KML_NS = "{http://www.opengis.net/kml/2.2}"
@@ -73,7 +73,7 @@ def step_vertex_count(context, count):
 @then("a KML file should be generated")
 def step_kml_generated(context):
     assert os.path.exists(context.kml_path)
-    with open(context.kml_path, "r") as fh:
+    with open(context.kml_path) as fh:
         context.kml_text = fh.read()
     assert context.kml_text.startswith("<?xml")
 

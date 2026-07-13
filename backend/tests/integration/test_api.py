@@ -1,4 +1,5 @@
 """Integration smoke tests for the FastAPI property endpoints."""
+
 from fastapi.testclient import TestClient
 
 from app.main import app

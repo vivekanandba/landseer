@@ -5,6 +5,7 @@ so the "match score" shown in comparisons and the recommendation ranking never
 disagree. Deal-breakers are hard filters (budget, size, location, must-have
 features) that disqualify a property regardless of its score.
 """
+
 from typing import List, Optional
 
 from sqlalchemy import select
@@ -74,9 +75,7 @@ def deal_breakers(session: Session, pref: Preference, prop: Property) -> List[st
     area = prop.total_area_sqft or 0
 
     if pref.budget_max and prop.asking_price and prop.asking_price > pref.budget_max:
-        reasons.append(
-            f"Over budget: asking {prop.asking_price:.0f} > max {pref.budget_max:.0f}"
-        )
+        reasons.append(f"Over budget: asking {prop.asking_price:.0f} > max {pref.budget_max:.0f}")
     if pref.size_min_sqft and area < pref.size_min_sqft:
         reasons.append(f"Too small: {area:.0f} < min {pref.size_min_sqft:.0f} sqft")
     if pref.size_max_sqft and area > pref.size_max_sqft:

@@ -1,4 +1,5 @@
 """Unit tests for the Property model and service (TDD)."""
+
 import pytest
 
 from app.models.property import PropertyStatus

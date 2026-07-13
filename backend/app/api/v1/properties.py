@@ -1,4 +1,5 @@
 """Property REST endpoints."""
+
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -38,7 +39,7 @@ def create_property(payload: PropertyCreate, db: Session = Depends(get_db)):
     try:
         return svc.create_property(db, **payload.model_dump())
     except svc.DuplicateProperty as exc:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
 
 
 @router.get("/{property_id}", response_model=PropertyRead)
@@ -46,7 +47,7 @@ def get_property(property_id: int, db: Session = Depends(get_db)):
     try:
         return svc.get_property(db, property_id)
     except svc.PropertyNotFound as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
 
 @router.patch("/{property_id}", response_model=PropertyRead)
@@ -54,7 +55,7 @@ def update_property(property_id: int, payload: PropertyUpdate, db: Session = Dep
     try:
         prop = svc.get_property(db, property_id)
     except svc.PropertyNotFound as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
     data = payload.model_dump(exclude_unset=True)
     if "status" in data and data["status"] is not None:
@@ -73,7 +74,7 @@ def add_subdivision(property_id: int, payload: SubdivisionCreate, db: Session = 
     try:
         prop = svc.get_property(db, property_id)
     except svc.PropertyNotFound as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     return svc.add_subdivision(db, prop, **payload.model_dump())
 
 
@@ -86,5 +87,5 @@ def add_neighbor(property_id: int, payload: NeighborCreate, db: Session = Depend
     try:
         prop = svc.get_property(db, property_id)
     except svc.PropertyNotFound as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     return svc.add_neighbor(db, prop, **payload.model_dump())

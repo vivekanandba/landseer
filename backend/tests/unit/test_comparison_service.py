@@ -1,4 +1,5 @@
 """Unit tests for comparison_service: table, scoring, ranking, export."""
+
 import os
 from pathlib import Path
 
@@ -8,12 +9,22 @@ from app.services import property_service as props
 
 def _seed(session):
     a = props.create_property(
-        session, name="Thuthikadu 171-4", location="Thuthikadu",
-        area_sqft=12500, price_total=1850000, price_per_sqft=148, status="shortlisted",
+        session,
+        name="Thuthikadu 171-4",
+        location="Thuthikadu",
+        area_sqft=12500,
+        price_total=1850000,
+        price_per_sqft=148,
+        status="shortlisted",
     )
     b = props.create_property(
-        session, name="Kotikal Forest", location="Kathalampattu",
-        area_sqft=112000, price_total=3500000, price_per_sqft=31, status="evaluating",
+        session,
+        name="Kotikal Forest",
+        location="Kathalampattu",
+        area_sqft=112000,
+        price_total=3500000,
+        price_per_sqft=31,
+        status="evaluating",
     )
     return [a, b]
 

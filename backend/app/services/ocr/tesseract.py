@@ -1,5 +1,6 @@
 """Real OCR via Tesseract. Heavy dependencies are imported lazily so importing
 this module never fails in environments (like the test suite) without them."""
+
 import os
 from typing import Dict
 

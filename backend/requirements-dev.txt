@@ -1,0 +1,5 @@
+# Development-only tooling (not needed at runtime).
+-r requirements.txt
+
+ruff==0.15.21
+pre-commit==3.5.0

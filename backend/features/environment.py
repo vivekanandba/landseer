@@ -3,6 +3,7 @@
 Each scenario runs against a fresh in-memory SQLite database so scenarios are
 fully isolated and the BDD suite needs no external PostgreSQL instance.
 """
+
 import os
 import sys
 

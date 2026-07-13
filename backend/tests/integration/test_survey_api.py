@@ -1,4 +1,5 @@
 """Integration tests for the survey boundary / map endpoints."""
+
 import os
 
 from fastapi.testclient import TestClient
@@ -39,7 +40,10 @@ def test_boundary_requires_three_vertices(session):
 
 
 def test_boundary_on_missing_property_404(session):
-    assert client.post("/api/v1/properties/999999/boundary", json={"vertices": SQUARE}).status_code == 404
+    assert (
+        client.post("/api/v1/properties/999999/boundary", json={"vertices": SQUARE}).status_code
+        == 404
+    )
 
 
 def test_map_kml_streams_without_persisting(session):

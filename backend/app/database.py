@@ -1,4 +1,5 @@
 """Database engine and session management."""
+
 from contextlib import contextmanager
 from typing import Iterator
 
