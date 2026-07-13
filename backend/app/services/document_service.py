@@ -111,8 +111,9 @@ def upload_document(
     return doc
 
 
-def simulate_ocr(session: Session, doc: Document, fields: Dict[str, str]) -> Document:
-    """Apply extracted OCR fields to a document and mark OCR complete."""
+def _apply_ocr_fields(session: Session, doc: Document, fields: Dict[str, str]) -> Document:
+    """Write extracted OCR fields onto a document and mark OCR complete.
+    Shared by the simulated path and the real provider pipeline."""
     if "survey_number" in fields:
         doc.extracted_survey_number = fields["survey_number"]
     if "owner_name" in fields:
@@ -121,10 +122,31 @@ def simulate_ocr(session: Session, doc: Document, fields: Dict[str, str]) -> Doc
         doc.extracted_extent = fields["extent"]
     if "village" in fields:
         doc.extracted_village = fields["village"]
-    doc.ocr_text = " ".join(str(v) for v in fields.values())
+    doc.ocr_text = fields.get("text") or " ".join(
+        str(v) for k, v in fields.items() if k != "text"
+    )
     doc.ocr_status = "complete"
     session.flush()
     return doc
+
+
+def simulate_ocr(session: Session, doc: Document, fields: Dict[str, str]) -> Document:
+    """Apply caller-supplied OCR fields to a document (test/simulated path)."""
+    return _apply_ocr_fields(session, doc, fields)
+
+
+def process_document(session: Session, doc: Document, provider) -> Document:
+    """Run an OCR provider against a document and store the extracted fields."""
+    fields = provider.extract(doc.filename)
+    return _apply_ocr_fields(session, doc, fields)
+
+
+def process_queue(session: Session, provider) -> int:
+    """Process every document still queued for OCR. Returns the count processed."""
+    queued = list(session.scalars(select(Document).where(Document.ocr_status == "queued")))
+    for doc in queued:
+        process_document(session, doc, provider)
+    return len(queued)
 
 
 # ---------------------------------------------------------------------------
