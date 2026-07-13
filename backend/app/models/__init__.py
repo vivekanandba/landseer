@@ -16,6 +16,7 @@ from app.models.property import (
     PropertyStatus,
     Subdivision,
 )
+from app.models.survey import SurveyBoundary, SurveyVertex
 
 __all__ = [
     "Base",
@@ -34,4 +35,6 @@ __all__ = [
     "DocumentType",
     "VerificationStatus",
     "Preference",
+    "SurveyBoundary",
+    "SurveyVertex",
 ]
