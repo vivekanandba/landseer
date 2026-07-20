@@ -109,7 +109,7 @@ def step_property_neighbors(context):
 @given('a property "{name}" has match score {score:d}%')
 def step_property_match_score(context, name, score):
     prop = _get(context, name)
-    prop.match_score = float(score)
+    prop.match_score = int(score)
     context.session.flush()
     context.current_property = prop
 
