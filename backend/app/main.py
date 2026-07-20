@@ -4,12 +4,10 @@ import time
 from contextlib import asynccontextmanager
 from uuid import uuid4
 
-from fastapi import Depends, FastAPI, Request
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm import Session
 
 from app.api.v1 import (
     brokers,
@@ -22,8 +20,8 @@ from app.api.v1 import (
     surveys,
 )
 from app.config import get_settings
-from app.database import create_all, get_db
-from app.errors import register_exception_handlers
+from app.database import create_all, get_engine
+from app.errors import error_response, register_exception_handlers
 from app.logging_config import configure_logging, get_logger
 from app.request_context import set_request_id
 
@@ -55,10 +53,17 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# A wildcard origin cannot be combined with credentials (browsers/Starlette
+# refuse to emit `Access-Control-Allow-Origin: *` alongside credentials), so we
+# drop credentials in that case rather than silently rejecting every request.
+_cors_allow_credentials = "*" not in settings.cors_origins
+if not _cors_allow_credentials:
+    logger.warning("CORS origins include '*'; disabling allow_credentials for compatibility.")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
-    allow_credentials=True,
+    allow_credentials=_cors_allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -112,14 +117,17 @@ def health() -> dict:
 
 
 @app.get("/ready", tags=["meta"])
-def ready(db: Session = Depends(get_db)) -> dict:
-    """Readiness: verifies the database is reachable. Returns 503 if not."""
+def ready() -> dict:
+    """Readiness: verifies the database is reachable. Returns 503 if not.
+
+    Probes on a dedicated short-lived connection rather than the request-scoped
+    ``get_db`` session, whose post-request ``commit()`` would itself fail on a
+    broken transaction and mask the 503 as a 500.
+    """
     try:
-        db.execute(text("SELECT 1"))
+        with get_engine().connect() as conn:
+            conn.execute(text("SELECT 1"))
     except SQLAlchemyError as exc:
         logger.error("readiness check failed: %s", exc)
-        return JSONResponse(
-            status_code=503,
-            content={"status": "unavailable", "detail": "database unavailable"},
-        )
+        return error_response(503, "DatabaseUnavailable", "The database is not reachable.")
     return {"status": "ready"}

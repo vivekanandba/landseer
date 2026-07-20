@@ -45,23 +45,27 @@ _DOMAIN_STATUS = (
 )
 
 
-def _envelope(status_code: int, type_name: str, message: str) -> JSONResponse:
+def error_response(status_code: int, type_name: str, message: str) -> JSONResponse:
+    """Build the standard error envelope. Also echoes the request-ID as a header
+    so 500s (whose response bypasses the request middleware) stay correlatable."""
+    request_id = get_request_id()
     return JSONResponse(
         status_code=status_code,
         content={
             "error": {
                 "type": type_name,
                 "message": message,
-                "request_id": get_request_id() or None,
+                "request_id": request_id or None,
             }
         },
+        headers={"X-Request-ID": request_id} if request_id else None,
     )
 
 
 def register_exception_handlers(app: FastAPI) -> None:
     def _make_domain_handler(status_code: int):
         async def handler(request: Request, exc: Exception) -> JSONResponse:
-            return _envelope(status_code, type(exc).__name__, str(exc))
+            return error_response(status_code, type(exc).__name__, str(exc))
 
         return handler
 
@@ -70,12 +74,12 @@ def register_exception_handlers(app: FastAPI) -> None:
 
     async def integrity_handler(request: Request, exc: IntegrityError) -> JSONResponse:
         logger.warning("integrity error on %s %s: %s", request.method, request.url.path, exc)
-        return _envelope(409, "IntegrityError", "The request conflicts with existing data.")
+        return error_response(409, "IntegrityError", "The request conflicts with existing data.")
 
     app.add_exception_handler(IntegrityError, integrity_handler)
 
     async def unhandled_handler(request: Request, exc: Exception) -> JSONResponse:
         logger.exception("unhandled error on %s %s", request.method, request.url.path)
-        return _envelope(500, "InternalServerError", "An internal error occurred.")
+        return error_response(500, "InternalServerError", "An internal error occurred.")
 
     app.add_exception_handler(Exception, unhandled_handler)

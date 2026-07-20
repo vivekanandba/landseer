@@ -26,12 +26,20 @@ class _RequestIdFilter(logging.Filter):
         return True
 
 
+def _resolve_level(level: str) -> int:
+    """Map a level name to its int, falling back to INFO for unknown names so a
+    bad LANDSEER_LOG_LEVEL can never crash app import."""
+    resolved = logging.getLevelName(str(level).upper())
+    return resolved if isinstance(resolved, int) else logging.INFO
+
+
 def configure_logging(level: str = "INFO") -> None:
     global _configured
     if _configured:
         return
+    resolved = _resolve_level(level)
     logger = logging.getLogger(_LOGGER_NAME)
-    logger.setLevel(level)
+    logger.setLevel(resolved)
     handler = logging.StreamHandler(sys.stdout)
     handler.addFilter(_RequestIdFilter())
     handler.setFormatter(
@@ -41,6 +49,8 @@ def configure_logging(level: str = "INFO") -> None:
     # Keep our namespace self-contained; don't double-log through the root logger.
     logger.propagate = False
     _configured = True
+    if _resolve_level(level) == logging.INFO and str(level).upper() != "INFO":
+        logger.warning("unknown log level %r; defaulting to INFO", level)
 
 
 def get_logger(name: str) -> logging.Logger:
