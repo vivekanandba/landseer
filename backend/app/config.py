@@ -28,6 +28,13 @@ class Settings(BaseSettings):
     # Default to local PostgreSQL; tests inject an SQLite URL instead.
     database_url: str = "postgresql+psycopg2://localhost/landseer"
 
+    # Connection-pool tuning (ignored for SQLite). pool_pre_ping is always on for
+    # server databases so a stale/dropped connection is detected and replaced
+    # rather than surfacing as an error on the next query.
+    db_pool_size: int = 5
+    db_max_overflow: int = 10
+    db_pool_recycle_seconds: int = 1800
+
     # Storage roots (relative to repo root by default).
     data_dir: str = "data"
     onedrive_root: str = "data/imports"
