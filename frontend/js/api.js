@@ -70,7 +70,18 @@ export const api = {
 
   properties: (params = {}) => request("/api/v1/properties" + qs(params)),
   property: (id) => request(`/api/v1/properties/${id}`),
+  createProperty: (payload) => request("/api/v1/properties", { method: "POST", body: payload }),
+  updateProperty: (id, payload) =>
+    request(`/api/v1/properties/${id}`, { method: "PATCH", body: payload }),
+  addSubdivision: (id, payload) =>
+    request(`/api/v1/properties/${id}/subdivisions`, { method: "POST", body: payload }),
+  addNeighbor: (id, payload) =>
+    request(`/api/v1/properties/${id}/neighbors`, { method: "POST", body: payload }),
+  addBoundary: (id, payload) =>
+    request(`/api/v1/properties/${id}/boundary`, { method: "POST", body: payload }),
   documents: (id) => request(`/api/v1/properties/${id}/documents`),
+  uploadDocument: (id, payload) =>
+    request(`/api/v1/properties/${id}/documents`, { method: "POST", body: payload }),
   mapGeojson: (id) => request(`/api/v1/properties/${id}/map.geojson`),
 
   recommendations: (pref, includeDisqualified = true) =>
@@ -82,7 +93,16 @@ export const api = {
   notifications: (params = {}) => request("/api/v1/notifications" + qs(params)),
 
   brokers: (params = {}) => request("/api/v1/brokers" + qs(params)),
+  createBroker: (payload) => request("/api/v1/brokers", { method: "POST", body: payload }),
+  linkBroker: (brokerId, propertyId, payload) =>
+    request(`/api/v1/brokers/${brokerId}/properties/${propertyId}`, {
+      method: "POST",
+      body: payload,
+    }),
   brokerPerformance: (id) => request(`/api/v1/brokers/${id}/performance`),
+
+  createPreference: (payload) =>
+    request("/api/v1/preferences", { method: "POST", body: payload }),
 
   comparison: (name) => request(`/api/v1/comparisons/${encodeURIComponent(name)}`),
   createComparison: (name, propertyIds) =>

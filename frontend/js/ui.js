@@ -112,3 +112,97 @@ function fmtCell(v) {
   if (v === null || v === undefined) return "—";
   return String(v);
 }
+
+// ---- modal + form ----
+// Show a node in a centered modal; returns a close() fn. One modal at a time.
+export function modal(contentNode) {
+  const root = document.getElementById("modal-root");
+  const close = () => clear(root);
+  root.replaceChildren(
+    h(
+      "div.modal-scrim",
+      { onclick: (e) => e.target.classList.contains("modal-scrim") && close() },
+      [contentNode],
+    ),
+  );
+  return close;
+}
+
+// Declarative form modal.
+// fields: [{name, label, type?, options?, value?, required?, placeholder?, rows?, help?}]
+//   type ∈ text|number|date|password|select|textarea|checkbox (default text)
+// onSubmit(values) is async; throw to show an inline error and keep the modal open.
+// Empty optional fields are omitted; number fields are coerced to Number.
+export function formModal({ title, fields, submitLabel = "Save", onSubmit }) {
+  const entries = {};
+  const body = fields.map((f) => {
+    let input;
+    if (f.type === "select") {
+      input = h(
+        "select",
+        { style: "width:100%" },
+        (f.options || []).map((o) => {
+          const value = typeof o === "string" ? o : o.value;
+          const label = typeof o === "string" ? o : o.label;
+          return h("option", { value }, label);
+        }),
+      );
+      if (f.value != null) input.value = f.value;
+    } else if (f.type === "textarea") {
+      input = h("textarea", { rows: f.rows || 3, placeholder: f.placeholder || "" }, f.value || "");
+    } else if (f.type === "checkbox") {
+      input = h("input", { type: "checkbox" });
+      if (f.value) input.checked = true;
+    } else {
+      input = h("input", {
+        type: f.type || "text",
+        placeholder: f.placeholder || "",
+        value: f.value != null ? f.value : "",
+        style: "width:100%",
+      });
+    }
+    entries[f.name] = { input, f };
+    if (f.type === "checkbox") {
+      return h("label", { class: "form-check" }, [input, f.label]);
+    }
+    return h("div.field", { style: "margin-bottom:12px" }, [
+      h("label", null, f.label + (f.required ? " *" : "")),
+      input,
+      f.help ? h("div.muted", { style: "font-size:12px" }, f.help) : null,
+    ]);
+  });
+
+  const err = h("div");
+  const submitBtn = h("button.btn", null, submitLabel);
+  const close = modal(
+    h("div.modal", null, [
+      h("h3", null, title),
+      err,
+      h("div", null, body),
+      h("div.row", null, [h("button.ghost-btn", { onclick: () => close() }, "Cancel"), submitBtn]),
+    ]),
+  );
+
+  submitBtn.addEventListener("click", async () => {
+    const values = {};
+    for (const [name, { input, f }] of Object.entries(entries)) {
+      let v = f.type === "checkbox" ? input.checked : input.value.trim();
+      if (f.required && (v === "" || v === null || v === undefined)) {
+        clear(err).appendChild(errorBanner(`${f.label} is required`));
+        return;
+      }
+      if (v === "" && f.type !== "checkbox") continue; // omit empty optionals
+      if (f.type === "number") v = Number(v);
+      values[name] = v;
+    }
+    submitBtn.disabled = true;
+    try {
+      await onSubmit(values);
+      close();
+    } catch (e) {
+      submitBtn.disabled = false;
+      clear(err).appendChild(errorBanner(e.message || "Request failed"));
+    }
+  });
+  return close;
+}
