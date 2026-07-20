@@ -83,9 +83,14 @@ def brokers_for_property(session: Session, prop: Property) -> List[BrokerPropert
     return list(session.scalars(stmt))
 
 
-def search_by_area(session: Session, area: str) -> List[Broker]:
+def search_by_area(
+    session: Session, area: str, limit: Optional[int] = None, offset: int = 0
+) -> List[Broker]:
     needle = area.strip().lower()
-    return [b for b in session.scalars(select(Broker)) if needle in [a.lower() for a in b.areas]]
+    matches = [b for b in session.scalars(select(Broker)) if needle in [a.lower() for a in b.areas]]
+    # areas_covered is a free-text field, so this filter runs in Python; page the
+    # result list to honour the same limit/offset as the other list endpoints.
+    return matches[offset : offset + limit if limit is not None else None]
 
 
 def performance(session: Session, broker: Broker) -> dict:

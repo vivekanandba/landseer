@@ -38,7 +38,7 @@ def list_brokers(
     db: Session = Depends(get_db),
 ):
     if area:
-        return brokers.search_by_area(db, area)
+        return brokers.search_by_area(db, area, limit=limit, offset=offset)
     return brokers.list_brokers(db, limit=limit, offset=offset)
 
 

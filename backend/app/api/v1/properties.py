@@ -30,9 +30,9 @@ def list_properties(
     db: Session = Depends(get_db),
 ):
     if location is not None:
-        return svc.search_by_location(db, location)
+        return svc.search_by_location(db, location, limit=limit, offset=offset)
     if min_price is not None and max_price is not None:
-        return svc.filter_by_price(db, min_price, max_price)
+        return svc.filter_by_price(db, min_price, max_price, limit=limit, offset=offset)
     return svc.list_properties(db, limit=limit, offset=offset)
 
 

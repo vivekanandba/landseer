@@ -146,29 +146,37 @@ def add_neighbor(
     return neighbor
 
 
-def search_by_location(session: Session, location: str) -> List[Property]:
-    stmt = select(Property).where(Property.location == location)
-    return list(session.scalars(stmt))
+def _paginate(stmt, limit: Optional[int], offset: int):
+    if offset:
+        stmt = stmt.offset(offset)
+    if limit is not None:
+        stmt = stmt.limit(limit)
+    return stmt
 
 
-def filter_by_price(session: Session, low: float, high: float) -> List[Property]:
+def search_by_location(
+    session: Session, location: str, limit: Optional[int] = None, offset: int = 0
+) -> List[Property]:
+    stmt = select(Property).where(Property.location == location).order_by(Property.name)
+    return list(session.scalars(_paginate(stmt, limit, offset)))
+
+
+def filter_by_price(
+    session: Session, low: float, high: float, limit: Optional[int] = None, offset: int = 0
+) -> List[Property]:
     stmt = (
         select(Property)
         .where(Property.asking_price >= low, Property.asking_price <= high)
         .order_by(Property.asking_price)
     )
-    return list(session.scalars(stmt))
+    return list(session.scalars(_paginate(stmt, limit, offset)))
 
 
 def list_properties(
     session: Session, limit: Optional[int] = None, offset: int = 0
 ) -> List[Property]:
     stmt = select(Property).order_by(Property.name)
-    if offset:
-        stmt = stmt.offset(offset)
-    if limit is not None:
-        stmt = stmt.limit(limit)
-    return list(session.scalars(stmt))
+    return list(session.scalars(_paginate(stmt, limit, offset)))
 
 
 def update_property(session: Session, prop: Property, changes: dict) -> Property:

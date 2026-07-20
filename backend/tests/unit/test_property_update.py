@@ -74,3 +74,10 @@ def test_list_properties_pagination(session):
         _prop(session, name=f"P{i}")
     page = svc.list_properties(session, limit=2, offset=2)
     assert [p.name for p in page] == ["P2", "P3"]
+
+
+def test_filtered_list_paths_honor_pagination(session):
+    for i in range(4):
+        _prop(session, name=f"Loc{i}", location="Ambur")
+    by_loc = svc.search_by_location(session, "Ambur", limit=2, offset=1)
+    assert [p.name for p in by_loc] == ["Loc1", "Loc2"]
