@@ -38,7 +38,10 @@ _FK_INDEXES = (
 
 
 def upgrade() -> None:
-    # A document is always attached to a parent property.
+    # A document is always attached to a parent property (the service sets
+    # property_id on every create), so no backfill is needed. This assumes no
+    # existing row has a NULL property_id; if one did, SET NOT NULL would abort
+    # and the offending rows would need a parent assigned first.
     op.alter_column("documents", "property_id", existing_type=sa.Integer(), nullable=False)
 
     for name, table, columns in _UNIQUE:
