@@ -66,7 +66,8 @@ class Property(Base, TimestampMixin):
     # Investment / scoring fields used by comparison.
     estimated_appreciation_pct: Mapped[Optional[float]] = mapped_column(Float)
     rental_yield: Mapped[Optional[str]] = mapped_column(String(32))
-    match_score: Mapped[Optional[float]] = mapped_column(Float)
+    # Stored as an integer 0–100 (matching_service rounds the weighted score).
+    match_score: Mapped[Optional[int]] = mapped_column(Integer)
 
     notes: Mapped[Optional[str]] = mapped_column(Text)
 
