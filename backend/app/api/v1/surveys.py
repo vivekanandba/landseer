@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from starlette.background import BackgroundTask
 
 from app.database import get_db
-from app.schemas.survey import BoundaryCreate, BoundaryRead
+from app.schemas.survey import BoundaryCreate, BoundaryRead, GeoFeatureCollection
 from app.services import kml_service, survey_service
 from app.services import property_service as props
 
@@ -55,7 +55,7 @@ def add_boundary(property_id: int, payload: BoundaryCreate, db: Session = Depend
         ) from exc
 
 
-@router.get("/{property_id}/map.geojson")
+@router.get("/{property_id}/map.geojson", response_model=GeoFeatureCollection)
 def map_geojson(property_id: int, db: Session = Depends(get_db)):
     prop = _property(db, property_id)
     return kml_service.geojson(survey_service.boundaries_for_map(db, prop))

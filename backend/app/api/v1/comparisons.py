@@ -2,6 +2,7 @@
 
 import os
 import tempfile
+from typing import Dict
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import FileResponse
@@ -9,7 +10,14 @@ from sqlalchemy.orm import Session
 from starlette.background import BackgroundTask
 
 from app.database import get_db
-from app.schemas.comparison import ComparisonCreate, ComparisonNotes, ComparisonRead
+from app.schemas.comparison import (
+    ComparisonCreate,
+    ComparisonNotes,
+    ComparisonRead,
+    ComparisonTable,
+    FeatureCell,
+    InvestmentEntry,
+)
 from app.services import comparison_service as cmp
 from app.services import property_service as props
 
@@ -58,19 +66,19 @@ def update_notes(name: str, payload: ComparisonNotes, db: Session = Depends(get_
     return cmp.add_notes(db, _require(db, name), payload.notes)
 
 
-@router.get("/{name}/table")
+@router.get("/{name}/table", response_model=ComparisonTable)
 def table(name: str, db: Session = Depends(get_db)):
     comparison = _require(db, name)
     return cmp.build_table(db, cmp.properties_in(db, comparison))
 
 
-@router.get("/{name}/features")
+@router.get("/{name}/features", response_model=Dict[str, Dict[str, FeatureCell]])
 def features(name: str, db: Session = Depends(get_db)):
     comparison = _require(db, name)
     return cmp.feature_comparison(db, cmp.properties_in(db, comparison))
 
 
-@router.get("/{name}/investment")
+@router.get("/{name}/investment", response_model=Dict[str, InvestmentEntry])
 def investment(name: str, db: Session = Depends(get_db)):
     comparison = _require(db, name)
     return cmp.investment_comparison(db, cmp.properties_in(db, comparison))
