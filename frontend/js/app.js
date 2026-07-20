@@ -31,7 +31,12 @@ const routes = [
   { re: /^\/brokers$/, title: "Brokers", view: brokersView },
 ];
 
+let renderSeq = 0;
+
 async function render() {
+  const token = ++renderSeq;
+  const isStale = () => token !== renderSeq;
+
   // Route on the path only; the query string (?foo=bar) is read separately.
   const path = (location.hash || "#/").slice(1).split("?")[0];
   const match = routes.map((r) => ({ r, m: path.match(r.re) })).find((x) => x.m);
@@ -46,8 +51,10 @@ async function render() {
   clear(viewEl).appendChild(spinner());
   try {
     const node = await r.view(...m.slice(1));
+    if (isStale()) return; // a newer navigation superseded this one
     clear(viewEl).appendChild(node);
   } catch (e) {
+    if (isStale()) return;
     const msg = e instanceof ApiError ? `${e.message}` : `Unexpected error: ${e.message}`;
     clear(viewEl).appendChild(errorBanner(msg));
     if (e instanceof ApiError && e.status === 401) {

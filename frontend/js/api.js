@@ -45,7 +45,17 @@ async function request(path, opts = {}) {
 
   if (resp.status === 204) return null;
   const text = await resp.text();
-  const data = text ? JSON.parse(text) : null;
+  let data = null;
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      // Non-JSON body (e.g. an HTML 502 from a proxy). Keep the raw text so the
+      // error still carries the status rather than a parse exception.
+      if (!resp.ok) throw new ApiError(resp.status, `HTTP ${resp.status}`);
+      throw new ApiError(resp.status, "Unexpected non-JSON response");
+    }
+  }
   if (!resp.ok) {
     const detail =
       (data && (data.detail || (data.error && data.error.message))) || `HTTP ${resp.status}`;
