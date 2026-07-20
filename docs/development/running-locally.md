@@ -51,6 +51,21 @@ LANDSEER_DATABASE_URL=postgresql+psycopg2://user:pass@localhost/landseer \
 - The test suite does **not** use Alembic — it builds the schema via `create_all`
   on in-memory SQLite (so migrations are a Postgres/production concern only).
 
+## Authentication
+
+The `/api/v1` surface is gated by a static bearer token. It is **open by default**
+(no token) for local/dev/test convenience; set `LANDSEER_API_TOKEN` to require it:
+
+```bash
+LANDSEER_API_TOKEN=some-long-random-string ... uvicorn app.main:app
+# then: curl -H "Authorization: Bearer some-long-random-string" .../api/v1/properties
+```
+
+`/health`, `/ready`, and `/docs` are always open. Any non-local deployment should
+set the token (the app logs a warning at startup when it is unset). To fail
+*closed* — refuse to boot if the token is missing — also set
+`LANDSEER_AUTH_REQUIRED=true` in that environment.
+
 ## Notes
 
 - Env vars use the `LANDSEER_` prefix (see `app/config.py`).
