@@ -4,7 +4,7 @@ import time
 from contextlib import asynccontextmanager
 from uuid import uuid4
 
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
@@ -24,6 +24,7 @@ from app.database import create_all, get_engine
 from app.errors import error_response, register_exception_handlers
 from app.logging_config import configure_logging, get_logger
 from app.request_context import set_request_id
+from app.security import require_auth
 
 settings = get_settings()
 
@@ -36,6 +37,11 @@ request_logger = get_logger("request")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    if not settings.api_token:
+        logger.warning(
+            "No LANDSEER_API_TOKEN set: the /api/v1 surface is UNAUTHENTICATED. "
+            "Set a token in any non-local environment."
+        )
     # For local/dev convenience. Production uses Alembic migrations instead.
     if settings.debug:
         logger.warning(
@@ -100,14 +106,17 @@ async def request_context_middleware(request: Request, call_next):
     return response
 
 
-app.include_router(properties.router)
-app.include_router(preferences.router)
-app.include_router(surveys.router)
-app.include_router(notifications.router)
-app.include_router(documents.router)
-app.include_router(brokers.router)
-app.include_router(comparisons.router)
-app.include_router(imports.router)
+# All /api/v1 routers are gated by the bearer-token dependency (a no-op when no
+# token is configured). /health, /ready and /docs stay open.
+_v1_auth = [Depends(require_auth)]
+app.include_router(properties.router, dependencies=_v1_auth)
+app.include_router(preferences.router, dependencies=_v1_auth)
+app.include_router(surveys.router, dependencies=_v1_auth)
+app.include_router(notifications.router, dependencies=_v1_auth)
+app.include_router(documents.router, dependencies=_v1_auth)
+app.include_router(brokers.router, dependencies=_v1_auth)
+app.include_router(comparisons.router, dependencies=_v1_auth)
+app.include_router(imports.router, dependencies=_v1_auth)
 
 
 @app.get("/health", tags=["meta"])
