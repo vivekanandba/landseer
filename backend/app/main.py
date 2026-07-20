@@ -2,10 +2,12 @@
 
 import time
 from contextlib import asynccontextmanager
+from pathlib import Path
 from uuid import uuid4
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -146,3 +148,18 @@ def ready() -> dict:
         logger.error("readiness check failed: %s", exc)
         return error_response(503, "DatabaseUnavailable", "The database is not reachable.")
     return {"status": "ready"}
+
+
+# Serve the static SPA (repo-root ``frontend/``) at /app when present, so the
+# single process can serve both the API and the UI (same-origin: no CORS, and the
+# browser shares the API token). Mounted last so it never shadows API routes;
+# a no-op when the directory is absent (e.g. API-only deploys).
+_frontend_dir = Path(__file__).resolve().parents[2] / "frontend"
+if _frontend_dir.is_dir():
+    app.mount("/app", StaticFiles(directory=str(_frontend_dir), html=True), name="frontend")
+
+    @app.get("/", include_in_schema=False)
+    def _root_redirect():
+        from fastapi.responses import RedirectResponse
+
+        return RedirectResponse(url="/app/")
