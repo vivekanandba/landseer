@@ -29,3 +29,12 @@ def test_keys_are_independent():
         limiter.check("ip-a", 3, now=0.0)
     # Different client is unaffected by ip-a's usage.
     assert limiter.check("ip-b", 3, now=0.0) == (True, 0)
+
+
+def test_prune_drops_expired_entries_only():
+    limiter = _FixedWindowLimiter()
+    limiter.check("old", 3, now=0.0)
+    limiter.check("recent", 3, now=59.0)
+    limiter._prune(now=61.0)  # 'old' window elapsed, 'recent' still active
+    assert "old" not in limiter._hits
+    assert "recent" in limiter._hits

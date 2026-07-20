@@ -22,6 +22,9 @@ from app.logging_config import get_logger
 logger = get_logger("ratelimit")
 
 _WINDOW_SECONDS = 60.0
+# Above this many tracked keys, sweep expired entries so a churn of distinct
+# (or spoofed) client IPs can't grow the map without bound.
+_PRUNE_THRESHOLD = 1024
 
 
 class _FixedWindowLimiter:
@@ -32,6 +35,8 @@ class _FixedWindowLimiter:
     def check(self, key: str, limit: int, now: float) -> Tuple[bool, int]:
         """Return (allowed, retry_after_seconds)."""
         with self._lock:
+            if len(self._hits) > _PRUNE_THRESHOLD:
+                self._prune(now)
             entry = self._hits.get(key)
             if entry is None or now - entry[0] >= _WINDOW_SECONDS:
                 self._hits[key] = [now, 1]
@@ -40,6 +45,12 @@ class _FixedWindowLimiter:
             if entry[1] > limit:
                 return False, int(_WINDOW_SECONDS - (now - entry[0])) + 1
             return True, 0
+
+    def _prune(self, now: float) -> None:
+        """Drop entries whose window has fully elapsed. Caller holds the lock."""
+        expired = [k for k, v in self._hits.items() if now - v[0] >= _WINDOW_SECONDS]
+        for k in expired:
+            del self._hits[k]
 
     def reset(self) -> None:
         with self._lock:
