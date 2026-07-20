@@ -32,3 +32,8 @@ class BrokerPerformance(BaseModel):
     purchased_count: int
     shortlist_rate: float
     conversion_rate: float
+
+
+class BrokerPropertyLinkResult(BaseModel):
+    broker_id: int
+    property_id: int

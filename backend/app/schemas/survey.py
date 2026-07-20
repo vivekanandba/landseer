@@ -1,6 +1,6 @@
 """Pydantic schemas for survey boundaries."""
 
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -33,3 +33,27 @@ class BoundaryRead(BaseModel):
     neighbor_id: Optional[int] = None
     label: Optional[str] = None
     vertices: List[VertexRead]
+
+
+# ---------------------------------------------------------------------------
+# GeoJSON response models for /map.geojson (previously an untyped dict).
+# ---------------------------------------------------------------------------
+class GeoGeometry(BaseModel):
+    type: Literal["Polygon"]
+    coordinates: List[List[List[float]]]
+
+
+class GeoFeatureProperties(BaseModel):
+    label: Optional[str] = None
+    role: Literal["subject", "neighbor"]
+
+
+class GeoFeature(BaseModel):
+    type: Literal["Feature"]
+    properties: GeoFeatureProperties
+    geometry: GeoGeometry
+
+
+class GeoFeatureCollection(BaseModel):
+    type: Literal["FeatureCollection"]
+    features: List[GeoFeature]

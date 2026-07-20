@@ -52,6 +52,22 @@ def test_add_property_and_notes(session):
     assert len(client.get("/api/v1/comparisons/C/table").json()["rows"]) == 2
 
 
+def test_features_and_investment_typed_responses(session):
+    a, b = _seed_two(session)
+    client.post("/api/v1/comparisons", json={"name": "Views", "property_ids": [a, b]})
+
+    features = client.get("/api/v1/comparisons/Views/features")
+    assert features.status_code == 200, features.text
+    # Keyed by property name; each feature cell has value + color.
+    cell = features.json()["Thuthikadu 171-4"]["water_source"]
+    assert set(cell) == {"value", "color"}
+
+    investment = client.get("/api/v1/comparisons/Views/investment")
+    assert investment.status_code == 200, investment.text
+    entry = investment.json()["Thuthikadu 171-4"]
+    assert {"projected_value_3y", "registration_cost", "total_investment"} <= set(entry)
+
+
 def test_unknown_comparison_404(session):
     assert client.get("/api/v1/comparisons/nope/table").status_code == 404
 

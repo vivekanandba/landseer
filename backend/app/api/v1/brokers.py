@@ -10,6 +10,7 @@ from app.schemas.broker import (
     BrokerCreate,
     BrokerPerformance,
     BrokerPropertyLink,
+    BrokerPropertyLinkResult,
     BrokerRead,
 )
 from app.services import broker_service as brokers
@@ -47,7 +48,11 @@ def get_broker(broker_id: int, db: Session = Depends(get_db)):
     return _broker(db, broker_id)
 
 
-@router.post("/{broker_id}/properties/{property_id}", status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/{broker_id}/properties/{property_id}",
+    response_model=BrokerPropertyLinkResult,
+    status_code=status.HTTP_201_CREATED,
+)
 def link_property(
     broker_id: int, property_id: int, payload: BrokerPropertyLink, db: Session = Depends(get_db)
 ):
