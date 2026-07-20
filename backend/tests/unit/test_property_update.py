@@ -60,6 +60,16 @@ def test_update_status_and_plain_field(session):
     assert prop.notes == "nice"
 
 
+def test_update_with_unchanged_status_logs_nothing(session):
+    """Editing other fields while re-sending the same status must not append a
+    spurious status_changed entry (the UI always sends status)."""
+    prop = _prop(session)  # status defaults to EVALUATING
+    svc.update_property(session, prop, {"status": PropertyStatus.EVALUATING, "notes": "tweak"})
+    actions = [log.action for log in prop.activity_logs]
+    assert "status_changed" not in actions
+    assert prop.notes == "tweak"
+
+
 def test_first_price_change_fires_alert_end_to_end(session):
     from app.services import notification_service as notify
 
