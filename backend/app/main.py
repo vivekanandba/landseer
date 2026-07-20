@@ -23,6 +23,7 @@ from app.config import get_settings
 from app.database import create_all, get_engine
 from app.errors import error_response, register_exception_handlers
 from app.logging_config import configure_logging, get_logger
+from app.rate_limit import rate_limit
 from app.request_context import set_request_id
 from app.security import require_auth
 
@@ -111,17 +112,17 @@ async def request_context_middleware(request: Request, call_next):
     return response
 
 
-# All /api/v1 routers are gated by the bearer-token dependency (a no-op when no
-# token is configured). /health, /ready and /docs stay open.
-_v1_auth = [Depends(require_auth)]
-app.include_router(properties.router, dependencies=_v1_auth)
-app.include_router(preferences.router, dependencies=_v1_auth)
-app.include_router(surveys.router, dependencies=_v1_auth)
-app.include_router(notifications.router, dependencies=_v1_auth)
-app.include_router(documents.router, dependencies=_v1_auth)
-app.include_router(brokers.router, dependencies=_v1_auth)
-app.include_router(comparisons.router, dependencies=_v1_auth)
-app.include_router(imports.router, dependencies=_v1_auth)
+# All /api/v1 routers are gated by rate limiting then the bearer-token
+# dependency (both no-ops when unconfigured). /health, /ready and /docs stay open.
+_v1_deps = [Depends(rate_limit), Depends(require_auth)]
+app.include_router(properties.router, dependencies=_v1_deps)
+app.include_router(preferences.router, dependencies=_v1_deps)
+app.include_router(surveys.router, dependencies=_v1_deps)
+app.include_router(notifications.router, dependencies=_v1_deps)
+app.include_router(documents.router, dependencies=_v1_deps)
+app.include_router(brokers.router, dependencies=_v1_deps)
+app.include_router(comparisons.router, dependencies=_v1_deps)
+app.include_router(imports.router, dependencies=_v1_deps)
 
 
 @app.get("/health", tags=["meta"])

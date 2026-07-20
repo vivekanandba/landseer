@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     # open API.
     auth_required: bool = False
 
+    # Per-client (per-IP) request cap for /api/v1, per 60s window. 0 disables
+    # rate limiting (the default).
+    rate_limit_per_minute: int = 0
+
     # Application log level (LANDSEER_LOG_LEVEL). Standard names: DEBUG/INFO/...
     log_level: str = "INFO"
 
