@@ -6,6 +6,7 @@ suite runs without a live PostgreSQL/PostGIS instance.
 """
 
 from functools import lru_cache
+from typing import List
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -15,6 +16,14 @@ class Settings(BaseSettings):
 
     app_name: str = "Landseer"
     debug: bool = False
+
+    # Application log level (LANDSEER_LOG_LEVEL). Standard names: DEBUG/INFO/...
+    log_level: str = "INFO"
+
+    # Cross-origin origins allowed to call the API. Empty by default (no
+    # cross-origin access). Set LANDSEER_CORS_ORIGINS to a JSON list, e.g.
+    # '["https://app.example.com"]'.
+    cors_origins: List[str] = []
 
     # Default to local PostgreSQL; tests inject an SQLite URL instead.
     database_url: str = "postgresql+psycopg2://localhost/landseer"
