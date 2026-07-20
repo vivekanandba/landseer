@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import date
 from typing import List, Optional
 
-from sqlalchemy import Date, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import Date, Float, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin
@@ -40,10 +40,13 @@ class BrokerProperty(Base, TimestampMixin):
     """A broker showing a specific property, with the terms on that day."""
 
     __tablename__ = "broker_properties"
+    __table_args__ = (UniqueConstraint("broker_id", "property_id", name="uq_broker_property"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     broker_id: Mapped[int] = mapped_column(ForeignKey("brokers.id", ondelete="CASCADE"))
-    property_id: Mapped[int] = mapped_column(ForeignKey("properties.id", ondelete="CASCADE"))
+    property_id: Mapped[int] = mapped_column(
+        ForeignKey("properties.id", ondelete="CASCADE"), index=True
+    )
     shown_date: Mapped[Optional[date]] = mapped_column(Date)
     asking_price: Mapped[Optional[float]] = mapped_column(Float)
     broker_notes: Mapped[Optional[str]] = mapped_column(Text)

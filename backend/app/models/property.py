@@ -6,7 +6,17 @@ import enum
 from datetime import datetime
 from typing import List, Optional
 
-from sqlalchemy import DateTime, Enum, Float, ForeignKey, Integer, String, Text, func
+from sqlalchemy import (
+    DateTime,
+    Enum,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    func,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin
@@ -80,9 +90,12 @@ class Property(Base, TimestampMixin):
 
 class Subdivision(Base, TimestampMixin):
     __tablename__ = "subdivisions"
+    __table_args__ = (UniqueConstraint("property_id", "name", name="uq_subdivision_property_name"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    property_id: Mapped[int] = mapped_column(ForeignKey("properties.id", ondelete="CASCADE"))
+    property_id: Mapped[int] = mapped_column(
+        ForeignKey("properties.id", ondelete="CASCADE"), index=True
+    )
     name: Mapped[str] = mapped_column(String(64), nullable=False)
     survey_number_full: Mapped[Optional[str]] = mapped_column(String(64), index=True)
     area_sqft: Mapped[Optional[float]] = mapped_column(Float)
@@ -92,9 +105,14 @@ class Subdivision(Base, TimestampMixin):
 
 class Neighbor(Base, TimestampMixin):
     __tablename__ = "neighbors"
+    __table_args__ = (
+        UniqueConstraint("property_id", "survey_number", name="uq_neighbor_property_survey"),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    property_id: Mapped[int] = mapped_column(ForeignKey("properties.id", ondelete="CASCADE"))
+    property_id: Mapped[int] = mapped_column(
+        ForeignKey("properties.id", ondelete="CASCADE"), index=True
+    )
     survey_number: Mapped[str] = mapped_column(String(64), index=True, nullable=False)
     direction: Mapped[Optional[Direction]] = mapped_column(
         Enum(Direction, values_callable=lambda e: [m.value for m in e])
@@ -111,7 +129,9 @@ class ActivityLog(Base):
     __tablename__ = "activity_logs"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    property_id: Mapped[int] = mapped_column(ForeignKey("properties.id", ondelete="CASCADE"))
+    property_id: Mapped[int] = mapped_column(
+        ForeignKey("properties.id", ondelete="CASCADE"), index=True
+    )
     action: Mapped[str] = mapped_column(String(128), nullable=False)
     detail: Mapped[Optional[str]] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(

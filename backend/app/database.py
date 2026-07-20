@@ -3,7 +3,7 @@
 from contextlib import contextmanager
 from typing import Iterator
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -36,8 +36,22 @@ def init_engine(database_url: str = None) -> Engine:
     if url.startswith("sqlite") and ":memory:" in url:
         kwargs["poolclass"] = StaticPool
     _engine = create_engine(url, **kwargs)
+    if url.startswith("sqlite"):
+        _enable_sqlite_fk(_engine)
     _SessionLocal = sessionmaker(bind=_engine, autoflush=False, expire_on_commit=False, future=True)
     return _engine
+
+
+def _enable_sqlite_fk(engine: Engine) -> None:
+    """SQLite ships with foreign-key enforcement OFF per connection. Turn it on
+    so cascade deletes and FK constraints behave the same as in PostgreSQL
+    (otherwise deleting a parent silently leaves orphaned children)."""
+
+    @event.listens_for(engine, "connect")
+    def _set_sqlite_pragma(dbapi_connection, connection_record):  # pragma: no cover - callback
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
 
 
 def get_engine() -> Engine:

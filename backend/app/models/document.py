@@ -37,9 +37,10 @@ class Document(Base, TimestampMixin):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
 
-    # A document is attached to exactly one of these; parent property is always set.
-    property_id: Mapped[Optional[int]] = mapped_column(
-        ForeignKey("properties.id", ondelete="CASCADE"), index=True
+    # A document is always attached to a parent property; subdivision_id /
+    # neighbor_id optionally narrow it to a specific child of that property.
+    property_id: Mapped[int] = mapped_column(
+        ForeignKey("properties.id", ondelete="CASCADE"), index=True, nullable=False
     )
     subdivision_id: Mapped[Optional[int]] = mapped_column(
         ForeignKey("subdivisions.id", ondelete="CASCADE"), index=True

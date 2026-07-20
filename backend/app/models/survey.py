@@ -20,10 +20,12 @@ class SurveyBoundary(Base, TimestampMixin):
     __tablename__ = "survey_boundaries"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    property_id: Mapped[int] = mapped_column(ForeignKey("properties.id", ondelete="CASCADE"))
+    property_id: Mapped[int] = mapped_column(
+        ForeignKey("properties.id", ondelete="CASCADE"), index=True
+    )
     # Set when this boundary outlines a neighbor of the property (else None = subject).
     neighbor_id: Mapped[Optional[int]] = mapped_column(
-        ForeignKey("neighbors.id", ondelete="CASCADE")
+        ForeignKey("neighbors.id", ondelete="CASCADE"), index=True
     )
     label: Mapped[Optional[str]] = mapped_column(String(255))
     srid: Mapped[int] = mapped_column(Integer, default=4326)
