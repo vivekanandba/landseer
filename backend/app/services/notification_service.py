@@ -13,10 +13,13 @@ from typing import List, Optional
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.logging_config import get_logger
 from app.models.document import Document
 from app.models.price_history import PriceHistory
 from app.models.property import ActivityLog, Property, PropertyStatus
 from app.services import document_service as docs
+
+_logger = get_logger("notifications")
 
 
 class Notifier:
@@ -27,13 +30,15 @@ class Notifier:
 
 
 class LogNotifier(Notifier):
-    """Default notifier: collects messages (and logs them) instead of sending."""
+    """Default notifier: records messages and emits each via the application
+    logger, instead of delivering through a real channel (SMTP/etc.)."""
 
     def __init__(self):
         self.messages: List[str] = []
 
     def send(self, message: str) -> None:
         self.messages.append(message)
+        _logger.info("notification: %s", message)
 
 
 def expiring_documents(
