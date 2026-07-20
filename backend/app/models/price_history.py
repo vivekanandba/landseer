@@ -14,7 +14,9 @@ class PriceHistory(Base):
     __tablename__ = "price_history"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    property_id: Mapped[int] = mapped_column(ForeignKey("properties.id", ondelete="CASCADE"))
+    property_id: Mapped[int] = mapped_column(
+        ForeignKey("properties.id", ondelete="CASCADE"), index=True
+    )
     price: Mapped[float] = mapped_column(Float, nullable=False)
     source: Mapped[str] = mapped_column(String(64), default="manual")
     recorded_at: Mapped[datetime] = mapped_column(
