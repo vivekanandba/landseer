@@ -22,6 +22,29 @@ def _connect_args(database_url: str) -> dict:
     return {}
 
 
+def _engine_kwargs(url: str) -> dict:
+    """Build create_engine keyword arguments for a database URL.
+
+    SQLite gets the single-connection handling the test/dev path needs; a real
+    server database gets pool_pre_ping plus configurable pool sizing.
+    """
+    kwargs = {"future": True, "connect_args": _connect_args(url)}
+    if url.startswith("sqlite"):
+        # An in-memory SQLite database lives inside a single connection; force
+        # all sessions (including FastAPI's threadpool workers) to share it.
+        if ":memory:" in url:
+            kwargs["poolclass"] = StaticPool
+        return kwargs
+    settings = get_settings()
+    kwargs.update(
+        pool_pre_ping=True,
+        pool_size=settings.db_pool_size,
+        max_overflow=settings.db_max_overflow,
+        pool_recycle=settings.db_pool_recycle_seconds,
+    )
+    return kwargs
+
+
 def init_engine(database_url: str = None) -> Engine:
     """(Re)initialise the global engine and session factory.
 
@@ -30,12 +53,7 @@ def init_engine(database_url: str = None) -> Engine:
     """
     global _engine, _SessionLocal
     url = database_url or get_settings().database_url
-    kwargs = {"future": True, "connect_args": _connect_args(url)}
-    # An in-memory SQLite database lives inside a single connection; force all
-    # sessions (including FastAPI's threadpool workers) to share one connection.
-    if url.startswith("sqlite") and ":memory:" in url:
-        kwargs["poolclass"] = StaticPool
-    _engine = create_engine(url, **kwargs)
+    _engine = create_engine(url, **_engine_kwargs(url))
     if url.startswith("sqlite"):
         _enable_sqlite_fk(_engine)
     _SessionLocal = sessionmaker(bind=_engine, autoflush=False, expire_on_commit=False, future=True)

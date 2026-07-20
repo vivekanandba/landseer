@@ -2,6 +2,12 @@
 
 The service layer is intentionally free of FastAPI/HTTP concerns so it can be
 driven directly from BDD step definitions and unit tests, and reused by the API.
+
+Not-found contract (consistent across services): a lookup **by primary key**
+(``get_property``/``get_broker``) raises a ``*NotFound`` domain exception, while a
+lookup **by natural key** (``get_property_by_name``/``get_comparison``/
+``get_preference``) returns ``None`` so callers can branch on existence. Routers
+translate the raised exceptions to 404s (and the global handler is the net).
 """
 
 from typing import List, Optional
