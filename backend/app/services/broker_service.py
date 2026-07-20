@@ -32,8 +32,13 @@ def get_broker(session: Session, broker_id: int) -> Broker:
     return broker
 
 
-def list_brokers(session: Session) -> List[Broker]:
-    return list(session.scalars(select(Broker).order_by(Broker.name)))
+def list_brokers(session: Session, limit: Optional[int] = None, offset: int = 0) -> List[Broker]:
+    stmt = select(Broker).order_by(Broker.name)
+    if offset:
+        stmt = stmt.offset(offset)
+    if limit is not None:
+        stmt = stmt.limit(limit)
+    return list(session.scalars(stmt))
 
 
 def link_to_property(
@@ -44,14 +49,27 @@ def link_to_property(
     asking_price: Optional[float] = None,
     broker_notes: Optional[str] = None,
 ) -> BrokerProperty:
-    link = BrokerProperty(
-        broker_id=broker.id,
-        property_id=prop.id,
-        shown_date=shown_date,
-        asking_price=asking_price,
-        broker_notes=broker_notes,
+    """Link a broker to a property, or update the terms if already linked.
+
+    Idempotent: a broker↔property pair is unique, so re-linking updates the
+    provided (non-null) terms on the existing row rather than raising on the
+    uniqueness constraint.
+    """
+    link = session.scalar(
+        select(BrokerProperty).where(
+            BrokerProperty.broker_id == broker.id,
+            BrokerProperty.property_id == prop.id,
+        )
     )
-    session.add(link)
+    if link is None:
+        link = BrokerProperty(broker_id=broker.id, property_id=prop.id)
+        session.add(link)
+    if shown_date is not None:
+        link.shown_date = shown_date
+    if asking_price is not None:
+        link.asking_price = asking_price
+    if broker_notes is not None:
+        link.broker_notes = broker_notes
     session.flush()
     return link
 

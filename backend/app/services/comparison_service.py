@@ -79,7 +79,11 @@ def add_notes(session: Session, comparison: Comparison, notes: str) -> Compariso
 
 
 def properties_in(session: Session, comparison: Comparison) -> List[Property]:
-    return [session.get(Property, item.property_id) for item in comparison.items]
+    # Skip any dangling item whose property no longer exists, so downstream
+    # table/score building never dereferences None. (FK cascade normally removes
+    # such items, but stay defensive.)
+    loaded = (session.get(Property, item.property_id) for item in comparison.items)
+    return [prop for prop in loaded if prop is not None]
 
 
 # ---------------------------------------------------------------------------

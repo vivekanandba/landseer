@@ -66,6 +66,11 @@ def create_property(session: Session, **fields) -> Property:
     session.add(prop)
     session.flush()
     _log(session, prop, "created", f"Property {prop.name!r} created")
+    # Seed a baseline price entry so the first later price change has something
+    # to compare against (price-change alerts need two history points).
+    if prop.asking_price is not None:
+        session.add(PriceHistory(property_id=prop.id, price=prop.asking_price, source="initial"))
+        session.flush()
     return prop
 
 
@@ -155,8 +160,48 @@ def filter_by_price(session: Session, low: float, high: float) -> List[Property]
     return list(session.scalars(stmt))
 
 
-def list_properties(session: Session) -> List[Property]:
-    return list(session.scalars(select(Property).order_by(Property.name)))
+def list_properties(
+    session: Session, limit: Optional[int] = None, offset: int = 0
+) -> List[Property]:
+    stmt = select(Property).order_by(Property.name)
+    if offset:
+        stmt = stmt.offset(offset)
+    if limit is not None:
+        stmt = stmt.limit(limit)
+    return list(session.scalars(stmt))
+
+
+def update_property(session: Session, prop: Property, changes: dict) -> Property:
+    """Apply a partial update to a property.
+
+    Unlike a bare ``setattr`` loop, this routes ``asking_price`` through
+    :func:`record_price` (so price history and the activity timeline stay in
+    sync, which price-change alerts depend on), applies ``status`` through
+    :func:`update_status`, and guards a ``name`` change against collisions.
+    """
+    changes = _normalize_fields(changes)
+
+    new_name = changes.pop("name", None)
+    if new_name is not None and new_name != prop.name:
+        if get_property_by_name(session, new_name) is not None:
+            raise DuplicateProperty(f"Property {new_name!r} already exists")
+        prop.name = new_name
+
+    new_status = changes.pop("status", None)
+    if new_status is not None:
+        update_status(session, prop, new_status)
+
+    new_price = changes.pop("asking_price", None)
+    if new_price is not None and (
+        prop.asking_price is None or float(new_price) != float(prop.asking_price)
+    ):
+        record_price(session, prop, new_price)
+
+    for field, value in changes.items():
+        setattr(prop, field, value)
+
+    session.flush()
+    return prop
 
 
 def record_price(
