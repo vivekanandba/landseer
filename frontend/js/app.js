@@ -14,7 +14,13 @@ import {
   errorBanner,
   tile,
   dataTable,
+  formModal,
 } from "./ui.js";
+
+const STATUSES = ["evaluating", "shortlisted", "rejected", "purchased"];
+const DOC_TYPES = ["patta", "fmb", "ec", "deed", "land_record", "notes", "photo", "document", "unknown"];
+const DIRECTIONS = ["", "north", "south", "east", "west"];
+const csv = (s) => (s ? s.split(",").map((x) => x.trim()).filter(Boolean) : []);
 
 const viewEl = document.getElementById("view");
 const crumbEl = document.getElementById("crumb");
@@ -147,7 +153,12 @@ async function propertiesView() {
     max_price: params.max_price,
   });
 
-  const wrap = h("div", null, [pageHead("Properties", `${props.length} shown`)]);
+  const wrap = h("div", null, [
+    h("div.title-row", null, [
+      pageHead("Properties", `${props.length} shown`),
+      h("button.btn", { onclick: openNewProperty }, "+ New property"),
+    ]),
+  ]);
 
   const locInput = h("input", { type: "text", placeholder: "e.g. Thuthikadu", value: params.location || "" });
   const minInput = h("input", { type: "number", placeholder: "min ₹", value: params.min_price || "" });
@@ -208,6 +219,13 @@ async function propertyDetailView(id) {
       statusBadge(p.status),
     ]),
     h("p.page-sub", null, [p.location, p.taluk, p.district].filter(Boolean).join(" · ")),
+    h("div.toolbar", null, [
+      h("button.btn", { onclick: () => openEditProperty(p) }, "Edit"),
+      h("button.ghost-btn", { onclick: () => openAddSubdivision(p.id) }, "+ Subdivision"),
+      h("button.ghost-btn", { onclick: () => openAddNeighbor(p.id) }, "+ Neighbor"),
+      h("button.ghost-btn", { onclick: () => openUploadDocument(p.id) }, "+ Document"),
+      h("button.ghost-btn", { onclick: () => openAddBoundary(p.id) }, "+ Boundary"),
+    ]),
   ]);
 
   const facts = h("div.card.card-pad", null, [
@@ -278,7 +296,10 @@ async function recommendationsView() {
   const prefName = params.pref || DEFAULT_PREF;
 
   const wrap = h("div", null, [
-    pageHead("Recommendations", "Properties scored against your requirements"),
+    h("div.title-row", null, [
+      pageHead("Recommendations", "Properties scored against your requirements"),
+      h("button.btn", { onclick: openNewPreference }, "+ New preference"),
+    ]),
   ]);
 
   const prefInput = h("input", { type: "text", value: prefName, style: "min-width:220px" });
@@ -490,12 +511,15 @@ function cellRender(col, val) {
 
 async function brokersView() {
   const brokers = await api.brokers({ limit: 200 });
-  const wrap = h("div", null, [pageHead("Brokers", `${brokers.length} contacts`)]);
-  if (!brokers.length) return wrap.appendChild(empty("No brokers yet.")), wrap;
+  const wrap = h("div", null, [
+    h("div.title-row", null, [
+      pageHead("Brokers", `${brokers.length} contacts`),
+      h("button.btn", { onclick: openNewBroker }, "+ New broker"),
+    ]),
+  ]);
+  if (!brokers.length) return wrap.appendChild(empty("No brokers yet — add one to start tracking.")), wrap;
 
-  const perf = await Promise.all(
-    brokers.map((b) => api.brokerPerformance(b.id).catch(() => null)),
-  );
+  const perf = await Promise.all(brokers.map((b) => api.brokerPerformance(b.id).catch(() => null)));
   const rows = brokers.map((b, i) => ({ ...b, perf: perf[i] }));
 
   wrap.appendChild(
@@ -504,23 +528,217 @@ async function brokersView() {
         { key: "name", label: "Broker" },
         { key: "phone", label: "Phone", render: (r) => r.phone || "—" },
         { key: "areas_covered", label: "Areas", render: (r) => r.areas_covered || "—" },
-        {
-          key: "shown",
-          label: "Shown",
-          num: true,
-          render: (r) => (r.perf ? r.perf.shown_count : "—"),
-        },
+        { key: "shown", label: "Shown", num: true, render: (r) => (r.perf ? r.perf.shown_count : "—") },
         {
           key: "conv",
           label: "Conversion",
           num: true,
           render: (r) => (r.perf ? `${r.perf.conversion_rate}%` : "—"),
         },
+        {
+          key: "link",
+          label: "",
+          render: (r) =>
+            h(
+              "button.ghost-btn",
+              { onclick: (e) => (e.stopPropagation(), openLinkBroker(r)) },
+              "Link property",
+            ),
+        },
       ],
       rows,
     ),
   );
   return wrap;
+}
+
+// ---- write flows (forms) ----
+function propertyFields(p = {}) {
+  const feat = "yes / no / nearby";
+  return [
+    { name: "name", label: "Name", required: true, value: p.name },
+    { name: "location", label: "Location", value: p.location },
+    { name: "survey_number", label: "Survey number", value: p.survey_number },
+    { name: "taluk", label: "Taluk", value: p.taluk },
+    { name: "total_area_sqft", label: "Total area (sqft)", type: "number", value: p.total_area_sqft },
+    { name: "asking_price", label: "Asking price (₹)", type: "number", value: p.asking_price },
+    { name: "price_per_sqft", label: "Price / sqft (₹)", type: "number", value: p.price_per_sqft },
+    { name: "status", label: "Status", type: "select", options: STATUSES, value: p.status },
+    { name: "water_source", label: "Water source", value: p.water_source, placeholder: feat },
+    { name: "electricity", label: "Electricity", value: p.electricity, placeholder: feat },
+    { name: "road_access", label: "Road access", value: p.road_access, placeholder: feat },
+    { name: "corner_plot", label: "Corner plot", type: "checkbox", value: p.corner_plot },
+    { name: "notes", label: "Notes", type: "textarea", value: p.notes },
+  ];
+}
+
+function openNewProperty() {
+  formModal({
+    title: "New property",
+    fields: propertyFields(),
+    submitLabel: "Create",
+    onSubmit: async (v) => {
+      const created = await api.createProperty(v);
+      location.hash = `#/properties/${created.id}`;
+      render();
+    },
+  });
+}
+
+function openEditProperty(p) {
+  formModal({
+    title: `Edit ${p.name}`,
+    fields: propertyFields(p),
+    onSubmit: async (v) => {
+      await api.updateProperty(p.id, v);
+      render();
+    },
+  });
+}
+
+function openAddSubdivision(id) {
+  formModal({
+    title: "Add subdivision",
+    fields: [
+      { name: "name", label: "Name", required: true },
+      { name: "survey_number_full", label: "Full survey number" },
+      { name: "area_sqft", label: "Area (sqft)", type: "number" },
+    ],
+    submitLabel: "Add",
+    onSubmit: async (v) => {
+      await api.addSubdivision(id, v);
+      render();
+    },
+  });
+}
+
+function openAddNeighbor(id) {
+  formModal({
+    title: "Add neighbor",
+    fields: [
+      { name: "survey_number", label: "Survey number", required: true },
+      { name: "direction", label: "Direction", type: "select", options: DIRECTIONS },
+      { name: "shared_boundary", label: "Shares a boundary", type: "checkbox" },
+      { name: "notes", label: "Notes", type: "textarea" },
+    ],
+    submitLabel: "Add",
+    onSubmit: async (v) => {
+      await api.addNeighbor(id, v);
+      render();
+    },
+  });
+}
+
+function openUploadDocument(id) {
+  formModal({
+    title: "Upload document",
+    fields: [
+      { name: "filename", label: "File name", required: true, placeholder: "patta_2024.pdf" },
+      { name: "doc_type", label: "Type", type: "select", options: DOC_TYPES },
+      { name: "issue_date", label: "Issue date", type: "date" },
+    ],
+    submitLabel: "Upload",
+    onSubmit: async (v) => {
+      await api.uploadDocument(id, v);
+      render();
+    },
+  });
+}
+
+function openAddBoundary(id) {
+  formModal({
+    title: "Add survey boundary",
+    fields: [
+      {
+        name: "vertices",
+        label: "Vertices",
+        type: "textarea",
+        rows: 5,
+        placeholder: "12.910, 79.130\n12.913, 79.134\n12.910, 79.137",
+        help: "One 'lat, lng' per line — at least 3 points.",
+      },
+      { name: "label", label: "Label" },
+      { name: "neighbor_survey_number", label: "Neighbor survey # (optional)" },
+    ],
+    submitLabel: "Save boundary",
+    onSubmit: async (v) => {
+      const vertices = (v.vertices || "")
+        .split("\n")
+        .map((line) => line.split(",").map((n) => parseFloat(n.trim())))
+        .filter((pair) => pair.length === 2 && pair.every((n) => !Number.isNaN(n)))
+        .map(([lat, lng]) => ({ lat, lng }));
+      if (vertices.length < 3) throw new Error("Enter at least 3 valid 'lat, lng' points.");
+      const payload = { vertices };
+      if (v.label) payload.label = v.label;
+      if (v.neighbor_survey_number) payload.neighbor_survey_number = v.neighbor_survey_number;
+      await api.addBoundary(id, payload);
+      render();
+    },
+  });
+}
+
+function openNewBroker() {
+  formModal({
+    title: "New broker",
+    fields: [
+      { name: "name", label: "Name", required: true },
+      { name: "phone", label: "Phone" },
+      { name: "email", label: "Email" },
+      { name: "areas_covered", label: "Areas", placeholder: "Thuthikadu, Katpadi", help: "Comma-separated." },
+      { name: "commission_rate", label: "Commission %", type: "number" },
+    ],
+    submitLabel: "Create",
+    onSubmit: async (v) => {
+      await api.createBroker(v);
+      render();
+    },
+  });
+}
+
+async function openLinkBroker(broker) {
+  const props = await api.properties({ limit: 200 });
+  formModal({
+    title: `Link ${broker.name} to a property`,
+    fields: [
+      {
+        name: "property_id",
+        label: "Property",
+        type: "select",
+        options: props.map((p) => ({ value: String(p.id), label: p.name })),
+      },
+      { name: "asking_price", label: "Broker's asking price (₹)", type: "number" },
+      { name: "shown_date", label: "Shown date", type: "date" },
+      { name: "broker_notes", label: "Notes", type: "textarea" },
+    ],
+    submitLabel: "Link",
+    onSubmit: async (v) => {
+      const { property_id, ...terms } = v;
+      await api.linkBroker(broker.id, property_id, terms);
+      render();
+    },
+  });
+}
+
+function openNewPreference() {
+  formModal({
+    title: "New preference",
+    fields: [
+      { name: "name", label: "Name", required: true, placeholder: "My Ideal Plot" },
+      { name: "budget_max", label: "Max budget (₹)", type: "number" },
+      { name: "size_min_sqft", label: "Min size (sqft)", type: "number" },
+      { name: "size_max_sqft", label: "Max size (sqft)", type: "number" },
+      { name: "locations", label: "Preferred locations", help: "Comma-separated." },
+      { name: "required_features", label: "Required features", help: "e.g. water_source, road_access" },
+      { name: "notes", label: "Notes", type: "textarea" },
+    ],
+    submitLabel: "Create",
+    onSubmit: async (v) => {
+      const payload = { ...v, locations: csv(v.locations), required_features: csv(v.required_features) };
+      await api.createPreference(payload);
+      location.hash = "#/recommendations?pref=" + encodeURIComponent(v.name);
+      render();
+    },
+  });
 }
 
 // ---- small builders ----

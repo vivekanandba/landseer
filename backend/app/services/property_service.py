@@ -202,7 +202,7 @@ def update_property(session: Session, prop: Property, changes: dict) -> Property
         prop.name = new_name
 
     new_status = changes.pop("status", None)
-    if new_status is not None:
+    if new_status is not None and _coerce_status(new_status) != prop.status:
         update_status(session, prop, new_status)
 
     new_price = changes.pop("asking_price", None)
