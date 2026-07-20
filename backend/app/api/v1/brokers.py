@@ -2,7 +2,7 @@
 
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -31,8 +31,15 @@ def create_broker(payload: BrokerCreate, db: Session = Depends(get_db)):
 
 
 @router.get("", response_model=List[BrokerRead])
-def list_brokers(area: Optional[str] = None, db: Session = Depends(get_db)):
-    return brokers.search_by_area(db, area) if area else brokers.list_brokers(db)
+def list_brokers(
+    area: Optional[str] = None,
+    limit: int = Query(default=100, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
+    db: Session = Depends(get_db),
+):
+    if area:
+        return brokers.search_by_area(db, area, limit=limit, offset=offset)
+    return brokers.list_brokers(db, limit=limit, offset=offset)
 
 
 @router.get("/{broker_id}", response_model=BrokerRead)

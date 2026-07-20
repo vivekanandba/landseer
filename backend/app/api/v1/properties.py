@@ -25,13 +25,15 @@ def list_properties(
     location: Optional[str] = Query(default=None),
     min_price: Optional[float] = Query(default=None),
     max_price: Optional[float] = Query(default=None),
+    limit: int = Query(default=100, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
     db: Session = Depends(get_db),
 ):
     if location is not None:
-        return svc.search_by_location(db, location)
+        return svc.search_by_location(db, location, limit=limit, offset=offset)
     if min_price is not None and max_price is not None:
-        return svc.filter_by_price(db, min_price, max_price)
-    return svc.list_properties(db)
+        return svc.filter_by_price(db, min_price, max_price, limit=limit, offset=offset)
+    return svc.list_properties(db, limit=limit, offset=offset)
 
 
 @router.post("", response_model=PropertyRead, status_code=status.HTTP_201_CREATED)
@@ -57,12 +59,10 @@ def update_property(property_id: int, payload: PropertyUpdate, db: Session = Dep
     except svc.PropertyNotFound as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
-    data = payload.model_dump(exclude_unset=True)
-    if "status" in data and data["status"] is not None:
-        svc.update_status(db, prop, data.pop("status"))
-    for field, value in data.items():
-        setattr(prop, field, value)
-    return prop
+    try:
+        return svc.update_property(db, prop, payload.model_dump(exclude_unset=True))
+    except svc.DuplicateProperty as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
 
 
 @router.post(

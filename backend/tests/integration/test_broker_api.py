@@ -33,3 +33,14 @@ def test_link_broker_to_property_and_performance(session):
 
 def test_unknown_broker_404(session):
     assert client.get("/api/v1/brokers/999999").status_code == 404
+
+
+def test_relinking_broker_is_idempotent(session):
+    bid = client.post("/api/v1/brokers", json={"name": "Meena"}).json()["id"]
+    pid = client.post("/api/v1/properties", json={"name": "Ambur Plot"}).json()["id"]
+    first = client.post(f"/api/v1/brokers/{bid}/properties/{pid}", json={"asking_price": 2000000})
+    second = client.post(f"/api/v1/brokers/{bid}/properties/{pid}", json={"asking_price": 2200000})
+    assert first.status_code == 201 and second.status_code == 201, second.text
+    # Re-linking updates terms rather than creating a duplicate row.
+    perf = client.get(f"/api/v1/brokers/{bid}/performance").json()
+    assert perf["shown_count"] == 1

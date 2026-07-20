@@ -3,7 +3,7 @@
 from datetime import date
 from typing import Optional
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.document import DocumentType, VerificationStatus
 
@@ -33,7 +33,9 @@ class DocumentRead(BaseModel):
 
 
 class OcrParseRequest(BaseModel):
-    text: str
+    # Cap the payload so a pathological blob can't tie up parsing; real OCR text
+    # for a land document is far under this.
+    text: str = Field(max_length=100_000)
 
 
 class OcrFields(BaseModel):
