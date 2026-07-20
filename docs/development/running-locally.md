@@ -62,7 +62,9 @@ LANDSEER_API_TOKEN=some-long-random-string ... uvicorn app.main:app
 ```
 
 `/health`, `/ready`, and `/docs` are always open. Any non-local deployment should
-set the token (the app logs a warning at startup when it is unset).
+set the token (the app logs a warning at startup when it is unset). To fail
+*closed* — refuse to boot if the token is missing — also set
+`LANDSEER_AUTH_REQUIRED=true` in that environment.
 
 ## Notes
 

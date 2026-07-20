@@ -38,9 +38,14 @@ request_logger = get_logger("request")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     if not settings.api_token:
+        if settings.auth_required:
+            raise RuntimeError(
+                "LANDSEER_AUTH_REQUIRED is set but LANDSEER_API_TOKEN is missing; "
+                "refusing to start with an unauthenticated API."
+            )
         logger.warning(
             "No LANDSEER_API_TOKEN set: the /api/v1 surface is UNAUTHENTICATED. "
-            "Set a token in any non-local environment."
+            "Set a token (and LANDSEER_AUTH_REQUIRED=true) in any non-local environment."
         )
     # For local/dev convenience. Production uses Alembic migrations instead.
     if settings.debug:

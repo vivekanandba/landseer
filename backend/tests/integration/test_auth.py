@@ -36,3 +36,17 @@ def test_accepts_correct_token(client, session, api_token):
 def test_health_and_ready_stay_open_with_token(client, session, api_token):
     assert client.get("/health").status_code == 200
     assert client.get("/ready").status_code == 200
+
+
+def test_auth_required_without_token_refuses_to_start(monkeypatch):
+    """Fail-closed: LANDSEER_AUTH_REQUIRED + no token aborts startup (lifespan)."""
+    from fastapi.testclient import TestClient
+
+    from app.main import app
+
+    settings = get_settings()
+    monkeypatch.setattr(settings, "auth_required", True)
+    monkeypatch.setattr(settings, "api_token", None)
+    with pytest.raises(RuntimeError, match="refusing to start"):
+        with TestClient(app):  # entering the context runs the lifespan
+            pass
