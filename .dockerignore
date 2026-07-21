@@ -12,6 +12,8 @@
 .github
 backend/tests
 frontend/tests
-deploy
 docs
 *.md
+# NOTE: do not exclude deploy/ — the backup image build (deploy/backup/Dockerfile)
+# COPYs deploy/backup/backup.sh from this shared context. The app image simply
+# doesn't COPY deploy/, so keeping it in-context costs nothing.
