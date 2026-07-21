@@ -28,9 +28,11 @@ gcloud config set project "$PROJECT_ID"
 
 1. If you exposed an API key earlier, **revoke it** (Account → API keys).
 2. Create a project; pick a region near `$REGION`.
-3. Open the branch → **Connection string** → copy the **Pooled** URI
-   (`postgresql://USER:PASSWORD@...-pooler.REGION.aws.neon.tech/DBNAME?sslmode=require`).
-   You'll paste it into Secret Manager in step 2 — nowhere else.
+3. Open the branch → **Connection string** → copy the **Pooled** URI in **libpq
+   form** (`postgresql://USER:PASSWORD@...-pooler.REGION.aws.neon.tech/DBNAME?sslmode=require`
+   — i.e. `postgresql://`, *not* `postgresql+psycopg2://`). This one form works
+   for both SQLAlchemy (it defaults to psycopg2) and `pg_dump`. You'll paste it
+   into Secret Manager in step 2 — nowhere else.
 
 ## 1. Enable APIs
 
@@ -120,16 +122,10 @@ gcloud storage buckets create "gs://${BUCKET}" --location="$REGION" --uniform-bu
 printf '{"rule":[{"action":{"type":"Delete"},"condition":{"age":30}}]}' > /tmp/lifecycle.json
 gcloud storage buckets update "gs://${BUCKET}" --lifecycle-file=/tmp/lifecycle.json
 
-# Build the backup image (context = repo root, Dockerfile in deploy/backup)
-gcloud builds submit --tag "${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/backup:latest" \
-  --config=/dev/stdin <<'YAML'
-steps:
-  - name: gcr.io/cloud-builders/docker
-    args: ['build','-t','${_IMG}','-f','deploy/backup/Dockerfile','.']
-images: ['${_IMG}']
-substitutions:
-  _IMG: '${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/backup:latest'
-YAML
+# Build the backup image (context = repo root; Dockerfile at deploy/backup).
+# _IMG is expanded by the shell here, then passed to Cloud Build as a substitution.
+gcloud builds submit . --config=deploy/backup/cloudbuild.yaml \
+  --substitutions=_IMG="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/backup:latest"
 
 # Backup job SA: read the DB secret + write to the bucket
 gcloud secrets add-iam-policy-binding landseer-db-url \
@@ -148,9 +144,13 @@ gcloud run jobs execute landseer-backup --region="$REGION" --wait
 gcloud storage ls "gs://${BUCKET}/backups/"
 ```
 
-Schedule daily (02:00 UTC), invoking the job via its Admin API:
+Schedule daily (02:00 UTC), invoking the job via its Admin API. The scheduler's
+service account needs permission to run the job:
 
 ```bash
+gcloud run jobs add-iam-policy-binding landseer-backup --region="$REGION" \
+  --member="serviceAccount:${RUNTIME_SA}" --role=roles/run.invoker
+
 gcloud scheduler jobs create http landseer-backup-daily \
   --location="$REGION" --schedule="0 2 * * *" \
   --uri="https://${REGION}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${PROJECT_ID}/jobs/landseer-backup:run" \

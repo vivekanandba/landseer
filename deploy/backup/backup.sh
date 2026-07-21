@@ -18,9 +18,14 @@ STAMP="$(date -u +%Y-%m-%dT%H-%M-%SZ)"
 FILE="landseer-${STAMP}.dump"
 LOCAL="/tmp/${FILE}"
 
+# pg_dump speaks libpq, not SQLAlchemy: strip a "+driver" (e.g. postgresql+psycopg2://)
+# down to postgresql:// so the same secret works whether it's stored in libpq or
+# SQLAlchemy form.
+DB_LIBPQ="$(printf '%s' "${DATABASE_URL}" | sed -E 's#^postgresql\+[a-z0-9]+://#postgresql://#')"
+
 echo "[backup] pg_dump -> ${LOCAL}"
 # Custom format (-Fc): compressed and restorable with pg_restore into any Postgres.
-pg_dump "${DATABASE_URL}" --format=custom --no-owner --no-privileges --file="${LOCAL}"
+pg_dump "${DB_LIBPQ}" --format=custom --no-owner --no-privileges --file="${LOCAL}"
 
 echo "[backup] upload -> gs://${BUCKET}/${PREFIX}/${FILE}"
 gcloud storage cp "${LOCAL}" "gs://${BUCKET}/${PREFIX}/${FILE}"
