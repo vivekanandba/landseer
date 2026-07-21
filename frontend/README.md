@@ -33,6 +33,19 @@ To point the UI at a **different** API host, or to supply a **bearer token**
 (when `LANDSEER_API_TOKEN` is set), use the in-app **⚙ Settings** dialog — both
 are stored in `localStorage`.
 
+## Tests
+
+Pure logic (formatters, CSV/vertex parsing, and the API client's URL/auth/error
+handling) is covered by unit tests on **Node's built-in test runner** — no
+dependencies, no install:
+
+```bash
+node --test tests/*.test.mjs   # or: npm test
+```
+
+CI runs these on every PR (the `frontend` job). Component/DOM and end-to-end
+tests await a JS toolchain in a networked CI environment.
+
 ## Layout
 
 - `index.html` — app shell (sidebar nav, topbar, view container).

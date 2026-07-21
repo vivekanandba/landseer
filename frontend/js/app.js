@@ -15,12 +15,14 @@ import {
   tile,
   dataTable,
   formModal,
+  csv,
+  parseVertices,
+  escapeHtml,
 } from "./ui.js";
 
 const STATUSES = ["evaluating", "shortlisted", "rejected", "purchased"];
 const DOC_TYPES = ["patta", "fmb", "ec", "deed", "land_record", "notes", "photo", "document", "unknown"];
 const DIRECTIONS = ["", "north", "south", "east", "west"];
-const csv = (s) => (s ? s.split(",").map((x) => x.trim()).filter(Boolean) : []);
 
 const viewEl = document.getElementById("view");
 const crumbEl = document.getElementById("crumb");
@@ -662,11 +664,7 @@ function openAddBoundary(id) {
     ],
     submitLabel: "Save boundary",
     onSubmit: async (v) => {
-      const vertices = (v.vertices || "")
-        .split("\n")
-        .map((line) => line.split(",").map((n) => parseFloat(n.trim())))
-        .filter((pair) => pair.length === 2 && pair.every((n) => !Number.isNaN(n)))
-        .map(([lat, lng]) => ({ lat, lng }));
+      const vertices = parseVertices(v.vertices);
       if (vertices.length < 3) throw new Error("Enter at least 3 valid 'lat, lng' points.");
       const payload = { vertices };
       if (v.label) payload.label = v.label;
@@ -806,9 +804,6 @@ function boundarySvg(geo) {
 function readQuery() {
   const q = (location.hash.split("?")[1] || "").trim();
   return Object.fromEntries(new URLSearchParams(q).entries());
-}
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 }
 
 // ---- chrome: theme, settings, connection ----
