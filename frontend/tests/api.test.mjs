@@ -1,11 +1,13 @@
 // API-client tests: URL/query building, auth header, body serialization, and
 // error normalization — with stubbed fetch + localStorage. No dependencies.
 import assert from "node:assert/strict";
-import { beforeEach, test } from "node:test";
+import { afterEach, beforeEach, test } from "node:test";
 
 import { ApiError, api, setBase, setToken } from "../js/api.js";
 
 let calls;
+const originalFetch = globalThis.fetch;
+const originalLocalStorage = globalThis.localStorage;
 
 function stubLocalStorage() {
   const store = new Map();
@@ -33,6 +35,12 @@ beforeEach(() => {
   stubLocalStorage();
   setBase("");
   setToken("");
+});
+
+afterEach(() => {
+  // Restore globals so these stubs can't leak into a shared runtime later.
+  globalThis.fetch = originalFetch;
+  globalThis.localStorage = originalLocalStorage;
 });
 
 test("builds query string, omitting empty params", async () => {
