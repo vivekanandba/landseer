@@ -42,17 +42,17 @@ With Claude Code, just run the slash command from the feature branch:
 ```
 
 It orchestrates the whole thing. The deterministic GitHub steps it leans on
-live in [`scripts/pr-loop.sh`](../scripts/pr-loop.sh):
+live in [`scripts/ship.sh`](../scripts/ship.sh):
 
 | Command                       | What it does                                                               |
 | ----------------------------- | -------------------------------------------------------------------------- |
-| `pr-loop.sh open [base]`      | Open (or reuse) a PR from the current branch onto `base` (default `main`). |
-| `pr-loop.sh status [pr]`      | CI state, mergeability, and unresolved-thread count.                       |
-| `pr-loop.sh threads [pr]`     | List review threads with resolved/unresolved status.                       |
-| `pr-loop.sh unresolved [pr]`  | Count of unresolved review threads.                                        |
-| `pr-loop.sh resolve-all [pr]` | Resolve every open review thread.                                          |
-| `pr-loop.sh approve [pr]`     | Submit an approving review (best-effort).                                  |
-| `pr-loop.sh merge [pr]`       | Squash-merge and delete the branch (refuses if threads are unresolved).    |
+| `ship.sh open [base]`      | Open (or reuse) a PR from the current branch onto `base` (default `main`). |
+| `ship.sh status [pr]`      | CI state, mergeability, and unresolved-thread count.                       |
+| `ship.sh threads [pr]`     | List review threads with resolved/unresolved status.                       |
+| `ship.sh unresolved [pr]`  | Count of unresolved review threads.                                        |
+| `ship.sh resolve-all [pr]` | Resolve every open review thread.                                          |
+| `ship.sh approve [pr]`     | Submit an approving review (best-effort).                                  |
+| `ship.sh merge [pr]`       | Squash-merge and delete the branch (refuses if threads are unresolved).    |
 
 The **judgement** — what to flag and how to fix it — is the reviewer's/dev's;
 the script only performs the mechanical, repeatable GitHub actions.
@@ -72,7 +72,7 @@ cd backend && pytest -q && cd ../frontend && node --test tests/*.test.mjs
 - **Keep the PR open** for the entire loop; only merge at the very end.
 - A review comment you disagree with can be resolved with a **reply explaining
   why** — resolving a thread doesn't require a code change.
-- `pr-loop.sh merge` refuses to merge unless CI checks are green (or genuinely
+- `ship.sh merge` refuses to merge unless CI checks are green (or genuinely
   absent) and every review thread is resolved.
 - **Requires** `gh` authenticated against this repo's GitHub remote. A project
   with no GitHub remote yet must be pushed to GitHub first.
