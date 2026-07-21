@@ -1,0 +1,17 @@
+# Keep the build context (and image) small. frontend/ IS needed (served at /app);
+# only its tests are dropped.
+**/venv
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/.ruff_cache
+**/htmlcov
+**/.coverage
+**/*.db
+.git
+.github
+backend/tests
+frontend/tests
+deploy
+docs
+*.md
