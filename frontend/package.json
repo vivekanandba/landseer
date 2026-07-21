@@ -1,0 +1,9 @@
+{
+  "name": "landseer-frontend",
+  "private": true,
+  "type": "module",
+  "description": "Landseer SPA — dependency-free; tests run on Node's built-in runner.",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs"
+  }
+}

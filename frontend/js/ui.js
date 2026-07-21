@@ -44,7 +44,37 @@ export function sqft(n) {
   return `${Number(n).toLocaleString("en-IN")} sqft`;
 }
 export function titlecase(s) {
-  return (s || "").replace(/\b\w/g, (c) => c.toUpperCase()).replace(/_/g, " ");
+  // De-snake first so words after an underscore also capitalize
+  // ("issues_found" -> "Issues Found", not "Issues found").
+  return (s || "").replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+// Split a comma-separated string into a trimmed, non-empty list.
+export function csv(s) {
+  return s
+    ? s
+        .split(",")
+        .map((x) => x.trim())
+        .filter(Boolean)
+    : [];
+}
+
+// Parse a "lat, lng" per line textarea into [{lat, lng}], dropping any line that
+// isn't two valid numbers. Caller enforces the minimum-count rule.
+export function parseVertices(text) {
+  return (text || "")
+    .split("\n")
+    .map((line) => line.split(",").map((n) => parseFloat(n.trim())))
+    .filter((pair) => pair.length === 2 && pair.every((n) => !Number.isNaN(n)))
+    .map(([lat, lng]) => ({ lat, lng }));
+}
+
+// Escape a string for safe insertion via innerHTML.
+export function escapeHtml(s) {
+  return String(s).replace(
+    /[&<>"']/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c],
+  );
 }
 
 // ---- shared widgets ----
