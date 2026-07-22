@@ -17,16 +17,16 @@ class Settings(BaseSettings):
     app_name: str = "Landseer"
     debug: bool = False
 
-    # Static bearer token that gates all /api/v1 endpoints. When unset (the
-    # default), the API is open — intended only for local/dev/test. Production
-    # must set LANDSEER_API_TOKEN.
-    api_token: Optional[str] = None
-
-    # Fail-closed guard: when true, the app refuses to start unless api_token is
-    # set. Set LANDSEER_AUTH_REQUIRED=true in any environment that must be
-    # authenticated, so a missing token is a boot failure rather than a silently
-    # open API.
-    auth_required: bool = False
+    # --- Authentication (Google Sign-In only) ---
+    # /api/v1 is gated by a Google-issued login: the SPA signs in with Google,
+    # the backend verifies the ID token, checks the email allowlist, and issues a
+    # short-lived HMAC session token. There is no static-token fallback.
+    auth_required: bool = False  # when true, enforce login (and fail closed if unconfigured)
+    google_client_id: Optional[str] = None  # OAuth 2.0 Web client id (public)
+    session_secret: Optional[str] = None  # HMAC key for signing session tokens
+    session_ttl_hours: int = 12
+    # Comma-separated allowlist of Google emails permitted to sign in.
+    allowed_emails: str = ""
 
     # Per-client (per-IP) request cap for /api/v1, per 60s window. 0 disables
     # rate limiting (the default).
@@ -53,6 +53,9 @@ class Settings(BaseSettings):
     # Storage roots (relative to repo root by default).
     data_dir: str = "data"
     onedrive_root: str = "data/imports"
+
+    def allowed_email_list(self) -> List[str]:
+        return [e.strip().lower() for e in self.allowed_emails.split(",") if e.strip()]
 
 
 @lru_cache

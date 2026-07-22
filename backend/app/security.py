@@ -1,24 +1,21 @@
-"""API authentication.
+"""API authorization: every ``/api/v1`` route (except ``/api/v1/auth/*``) requires
+a valid Google-issued **session token** — see :mod:`app.auth` for how login mints
+it. There is no static-token or anonymous path when auth is enforced.
 
-A single static bearer token (``LANDSEER_API_TOKEN``) gates the ``/api/v1``
-surface. When no token is configured the dependency is a no-op so local/dev/test
-runs stay open; production is expected to set the token. The comparison is
-constant-time to avoid leaking the token via response timing.
+When ``auth_required`` is false (local/dev/test), the dependency is a no-op so the
+suite and local runs stay open.
 """
 
-import secrets
 from typing import Optional
 
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
+from app.auth import verify_session
 from app.config import get_settings
 from app.logging_config import get_logger
 
 logger = get_logger("auth")
-
-# auto_error=False so we can allow anonymous access when auth is disabled and
-# emit our own 401 (with WWW-Authenticate) when it's enabled.
 _bearer = HTTPBearer(auto_error=False)
 
 
@@ -26,13 +23,17 @@ def require_auth(
     request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(_bearer),
 ) -> None:
-    expected = get_settings().api_token
-    if not expected:
-        return  # auth disabled
-    if credentials is None or not secrets.compare_digest(credentials.credentials, expected):
+    settings = get_settings()
+    if not settings.auth_required:
+        return  # auth disabled (local/dev/test)
+
+    payload = verify_session(
+        credentials.credentials if credentials else "", settings.session_secret or ""
+    )
+    if payload is None or payload.get("email", "").lower() not in settings.allowed_email_list():
         logger.warning("auth rejected method=%s path=%s", request.method, request.url.path)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or missing API token",
+            detail="Sign in with Google to continue",
             headers={"WWW-Authenticate": "Bearer"},
         )

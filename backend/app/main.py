@@ -12,6 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
+from app import auth
 from app.api.v1 import (
     brokers,
     comparisons,
@@ -53,15 +54,26 @@ def _app_version() -> str:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    if not settings.api_token:
-        if settings.auth_required:
-            raise RuntimeError(
-                "LANDSEER_AUTH_REQUIRED is set but LANDSEER_API_TOKEN is missing; "
-                "refusing to start with an unauthenticated API."
+    if settings.auth_required:
+        missing = [
+            name
+            for name, val in (
+                ("LANDSEER_GOOGLE_CLIENT_ID", settings.google_client_id),
+                ("LANDSEER_SESSION_SECRET", settings.session_secret),
+                ("LANDSEER_ALLOWED_EMAILS", settings.allowed_email_list()),
             )
+            if not val
+        ]
+        if missing:
+            raise RuntimeError(
+                "LANDSEER_AUTH_REQUIRED is set but Google auth is not fully configured; "
+                f"missing: {', '.join(missing)}. Refusing to start."
+            )
+    else:
         logger.warning(
-            "No LANDSEER_API_TOKEN set: the /api/v1 surface is UNAUTHENTICATED. "
-            "Set a token (and LANDSEER_AUTH_REQUIRED=true) in any non-local environment."
+            "auth_required is off: the /api/v1 surface is UNAUTHENTICATED. Enable "
+            "LANDSEER_AUTH_REQUIRED (with Google client id, session secret, allowed emails) "
+            "in any non-local environment."
         )
     # For local/dev convenience. Production uses Alembic migrations instead.
     if settings.debug:
@@ -127,8 +139,11 @@ async def request_context_middleware(request: Request, call_next):
     return response
 
 
-# All /api/v1 routers are gated by rate limiting then the bearer-token
-# dependency (both no-ops when unconfigured). /health, /ready and /docs stay open.
+# /api/v1/auth/* (login) must NOT require auth — that's how you obtain a session.
+# Rate-limit it, but no require_auth. Every other v1 router is gated by rate limit
+# + require_auth (Google session). /health, /ready, /docs stay open.
+app.include_router(auth.router, dependencies=[Depends(rate_limit)])
+
 _v1_deps = [Depends(rate_limit), Depends(require_auth)]
 app.include_router(properties.router, dependencies=_v1_deps)
 app.include_router(preferences.router, dependencies=_v1_deps)

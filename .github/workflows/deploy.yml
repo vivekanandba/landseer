@@ -70,8 +70,8 @@ jobs:
           gcloud run deploy "${{ vars.CLOUD_RUN_SERVICE }}" \
             --image "$IMAGE" --region "${{ vars.GCP_REGION }}" --project "${{ vars.GCP_PROJECT_ID }}" \
             --allow-unauthenticated --min-instances 0 --max-instances 2 --cpu 1 --memory 512Mi \
-            --set-secrets "LANDSEER_DATABASE_URL=landseer-db-url:latest,LANDSEER_API_TOKEN=landseer-api-token:latest" \
-            --set-env-vars "LANDSEER_AUTH_REQUIRED=true,LANDSEER_DB_POOL_SIZE=2,LANDSEER_DB_MAX_OVERFLOW=2,APP_VERSION=${{ needs.version.outputs.value }}"
+            --set-secrets "LANDSEER_DATABASE_URL=landseer-db-url:latest,LANDSEER_SESSION_SECRET=landseer-session-secret:latest" \
+            --set-env-vars "^@@^LANDSEER_AUTH_REQUIRED=true@@LANDSEER_GOOGLE_CLIENT_ID=${{ vars.LANDSEER_GOOGLE_CLIENT_ID }}@@LANDSEER_ALLOWED_EMAILS=${{ vars.LANDSEER_ALLOWED_EMAILS }}@@LANDSEER_DB_POOL_SIZE=2@@LANDSEER_DB_MAX_OVERFLOW=2@@APP_VERSION=${{ needs.version.outputs.value }}"
       - name: Run database migrations (Alembic, on the new image)
         run: |
           REGION="${{ vars.GCP_REGION }}"; PROJ="${{ vars.GCP_PROJECT_ID }}"
