@@ -1,5 +1,6 @@
 """FastAPI application entrypoint."""
 
+import os
 import time
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -38,6 +39,18 @@ logger = get_logger("app")
 request_logger = get_logger("request")
 
 
+def _app_version() -> str:
+    """Version reported by the app. CI/CD injects APP_VERSION into Cloud Run; local
+    runs fall back to the repo-root VERSION file, then a dev placeholder."""
+    env = os.getenv("APP_VERSION")
+    if env:
+        return env
+    try:
+        return (Path(__file__).resolve().parents[2] / "VERSION").read_text().strip()
+    except OSError:
+        return "0.0.0+dev"
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     if not settings.api_token:
@@ -63,7 +76,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.app_name,
     description="Land search and evaluation system for Vellore, Tamil Nadu",
-    version="0.1.0",
+    version=_app_version(),
     lifespan=lifespan,
 )
 
