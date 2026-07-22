@@ -1,0 +1,90 @@
+name: Deploy
+
+# Continuous deployment to Cloud Run. Auth is keyless via Workload Identity
+# Federation (no stored SA keys). Config comes from repo Variables (Settings →
+# Secrets and variables → Actions → Variables): GCP_PROJECT_ID, GCP_REGION,
+# AR_REPO, CLOUD_RUN_SERVICE, GCP_WIF_PROVIDER, GCP_DEPLOY_SA.
+#
+# Versioning: the repo-root VERSION file is the source of truth.
+#   - push to main  -> deploy a dev build tagged  X.Y.Z+<sha>
+#   - tag vX.Y.Z    -> must match VERSION; deploys clean X.Y.Z and cuts a Release
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: write # create GitHub Releases
+  id-token: write # Workload Identity Federation (OIDC)
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      value: ${{ steps.v.outputs.value }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        run: |
+          VER=$(tr -d '[:space:]' < VERSION)
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            TAG="${GITHUB_REF#refs/tags/v}"
+            if [[ "${TAG}" != "${VER}" ]]; then
+              echo "::error::Tag v${TAG} does not match VERSION (${VER}). Bump VERSION and retag."
+              exit 1
+            fi
+            echo "value=${VER}" >> "$GITHUB_OUTPUT"
+          else
+            echo "value=${VER}+${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          fi
+
+  deploy:
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SA }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: Build & push image
+        run: |
+          VERSION="${{ needs.version.outputs.value }}"
+          IMAGE_TAG="${VERSION//+/-}"   # Docker tags can't contain '+'
+          IMAGE="${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/${{ vars.AR_REPO }}/landseer-api:${IMAGE_TAG}"
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+          gcloud auth configure-docker "${{ vars.GCP_REGION }}-docker.pkg.dev" --quiet
+          docker build -t "$IMAGE" .
+          docker push "$IMAGE"
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy "${{ vars.CLOUD_RUN_SERVICE }}" \
+            --image "$IMAGE" --region "${{ vars.GCP_REGION }}" --project "${{ vars.GCP_PROJECT_ID }}" \
+            --allow-unauthenticated --min-instances 0 --max-instances 2 --cpu 1 --memory 512Mi \
+            --set-secrets "LANDSEER_DATABASE_URL=landseer-db-url:latest,LANDSEER_API_TOKEN=landseer-api-token:latest" \
+            --set-env-vars "LANDSEER_AUTH_REQUIRED=true,LANDSEER_DB_POOL_SIZE=2,LANDSEER_DB_MAX_OVERFLOW=2,APP_VERSION=${{ needs.version.outputs.value }}"
+      - name: Run database migrations (Alembic, on the new image)
+        run: |
+          REGION="${{ vars.GCP_REGION }}"; PROJ="${{ vars.GCP_PROJECT_ID }}"
+          if gcloud run jobs describe landseer-migrate --region "$REGION" --project "$PROJ" >/dev/null 2>&1; then
+            gcloud run jobs update landseer-migrate --image "$IMAGE" --region "$REGION" --project "$PROJ" \
+              --set-secrets "LANDSEER_DATABASE_URL=landseer-db-url:latest"
+          else
+            gcloud run jobs create landseer-migrate --image "$IMAGE" --region "$REGION" --project "$PROJ" \
+              --set-secrets "LANDSEER_DATABASE_URL=landseer-db-url:latest" --command alembic --args upgrade,head
+          fi
+          gcloud run jobs execute landseer-migrate --region "$REGION" --project "$PROJ" --wait
+
+  release:
+    needs: [version, deploy]
+    if: ${{ startsWith(github.ref, 'refs/tags/') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          name: Landseer ${{ github.ref_name }}
