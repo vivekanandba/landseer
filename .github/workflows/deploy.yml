@@ -18,6 +18,12 @@ permissions:
   contents: write # create GitHub Releases
   id-token: write # Workload Identity Federation (OIDC)
 
+# Serialize deploys so overlapping pushes don't race the Cloud Run revision or
+# the migrate job. Don't cancel an in-flight deploy mid-migration.
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   version:
     runs-on: ubuntu-latest
