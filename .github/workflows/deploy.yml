@@ -72,17 +72,16 @@ jobs:
             --allow-unauthenticated --min-instances 0 --max-instances 2 --cpu 1 --memory 512Mi \
             --set-secrets "LANDSEER_DATABASE_URL=landseer-db-url:latest,LANDSEER_SESSION_SECRET=landseer-session-secret:latest" \
             --set-env-vars "^@@^LANDSEER_AUTH_REQUIRED=true@@LANDSEER_GOOGLE_CLIENT_ID=${{ vars.LANDSEER_GOOGLE_CLIENT_ID }}@@LANDSEER_ALLOWED_EMAILS=${{ vars.LANDSEER_ALLOWED_EMAILS }}@@LANDSEER_DB_POOL_SIZE=2@@LANDSEER_DB_MAX_OVERFLOW=2@@APP_VERSION=${{ needs.version.outputs.value }}"
-      - name: Run database migrations (Alembic, on the new image)
+      - name: Build maintenance image & run migrations
         run: |
           REGION="${{ vars.GCP_REGION }}"; PROJ="${{ vars.GCP_PROJECT_ID }}"
-          if gcloud run jobs describe landseer-migrate --region "$REGION" --project "$PROJ" >/dev/null 2>&1; then
-            gcloud run jobs update landseer-migrate --image "$IMAGE" --region "$REGION" --project "$PROJ" \
-              --set-secrets "LANDSEER_DATABASE_URL=landseer-db-url:latest"
-          else
-            gcloud run jobs create landseer-migrate --image "$IMAGE" --region "$REGION" --project "$PROJ" \
-              --set-secrets "LANDSEER_DATABASE_URL=landseer-db-url:latest" --command alembic --args upgrade,head
-          fi
-          gcloud run jobs execute landseer-migrate --region "$REGION" --project "$PROJ" --wait
+          MAINT="${REGION}-docker.pkg.dev/${PROJ}/${{ vars.AR_REPO }}/maintenance:latest"
+          docker build -f deploy/maintenance/Dockerfile -t "$MAINT" .
+          docker push "$MAINT"
+          # Point the combined migrate+backup job at the fresh image and run
+          # migrations only. The weekly scheduler runs its default (migrate + backup).
+          gcloud run jobs update landseer-maintenance --image "$MAINT" --region "$REGION" --project "$PROJ"
+          gcloud run jobs execute landseer-maintenance --region "$REGION" --project "$PROJ" --args=migrate --wait
 
   release:
     needs: [version, deploy]

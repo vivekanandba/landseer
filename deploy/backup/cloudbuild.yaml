@@ -1,9 +1,0 @@
-# Build the backup runner image. The Dockerfile lives at deploy/backup/Dockerfile
-# but the build context is the repo root (it COPYs deploy/backup/backup.sh).
-#   gcloud builds submit . --config=deploy/backup/cloudbuild.yaml \
-#     --substitutions=_IMG="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPO}/backup:latest"
-steps:
-  - name: gcr.io/cloud-builders/docker
-    args: ["build", "-t", "${_IMG}", "-f", "deploy/backup/Dockerfile", "."]
-images:
-  - "${_IMG}"
