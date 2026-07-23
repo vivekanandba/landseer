@@ -1,6 +1,13 @@
 # Deploying Landseer to GCP (Cloud Run + Neon) with GCS backups
 
-> **⚠️ Superseded in two ways — read first.**
+> **⚠️ Superseded in three ways — read first.**
+> 0. **Migrate + backup are now ONE job.** The former separate `landseer-migrate`
+>    and `landseer-backup` jobs are replaced by a single combined image
+>    (`deploy/maintenance/`, entrypoint `migrate|backup|all`) and one Cloud Run
+>    job `landseer-maintenance`. A **weekly** scheduler `landseer-maintenance-weekly`
+>    (`0 2 * * 0`) runs the default `all` (migrate + backup); CI runs it in
+>    `migrate` mode on each deploy. The old `landseer-backup-daily` scheduler and
+>    the two split jobs have been removed.
 > 1. **Deploys are automated** via `.github/workflows/deploy.yml` (push to `main`).
 >    This runbook is the *manual/bootstrap* reference.
 > 2. **Auth is Google-only now.** The `landseer-api-token` secret and the
