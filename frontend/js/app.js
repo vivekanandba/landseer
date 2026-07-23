@@ -1,5 +1,6 @@
 // Landseer SPA: hash router + views over the typed backend API.
-import { api, ApiError, getBase, setBase, getToken, setToken } from "./api.js";
+import { api, ApiError, getBase, setBase, setSession } from "./api.js";
+import { showLogin, signOut, sessionValid } from "./auth.js";
 import {
   h,
   clear,
@@ -63,11 +64,14 @@ async function render() {
     clear(viewEl).appendChild(node);
   } catch (e) {
     if (isStale()) return;
+    if (e instanceof ApiError && e.status === 401) {
+      // Session missing/expired — drop it and return to the login screen.
+      setSession("");
+      location.reload();
+      return;
+    }
     const msg = e instanceof ApiError ? `${e.message}` : `Unexpected error: ${e.message}`;
     clear(viewEl).appendChild(errorBanner(msg));
-    if (e instanceof ApiError && e.status === 401) {
-      viewEl.appendChild(empty("This API requires a token — open Settings to set one."));
-    }
   }
 }
 
@@ -821,8 +825,12 @@ function initTheme() {
 
 function initSettings() {
   document.getElementById("settings-btn").addEventListener("click", () => {
-    const base = h("input", { type: "text", value: getBase(), placeholder: "(same origin)", style: "width:100%" });
-    const token = h("input", { type: "password", value: getToken(), placeholder: "bearer token (optional)", style: "width:100%" });
+    const base = h("input", {
+      type: "text",
+      value: getBase(),
+      placeholder: "(same origin)",
+      style: "width:100%",
+    });
     const root = document.getElementById("modal-root");
     const close = () => clear(root);
     root.appendChild(
@@ -830,8 +838,6 @@ function initSettings() {
         h("div.modal", null, [
           h("h3", null, "Connection settings"),
           field("API base URL", base),
-          h("div", { style: "height:10px" }),
-          field("API token", token),
           h("div.row", null, [
             h("button.ghost-btn", { onclick: close }, "Cancel"),
             h(
@@ -839,7 +845,6 @@ function initSettings() {
               {
                 onclick: () => {
                   setBase(base.value.trim());
-                  setToken(token.value.trim());
                   close();
                   checkConnection();
                   render();
@@ -854,6 +859,11 @@ function initSettings() {
   });
 }
 
+function initSignOut() {
+  const btn = document.getElementById("signout-btn");
+  if (btn) btn.addEventListener("click", signOut);
+}
+
 async function checkConnection() {
   try {
     await api.health();
@@ -866,8 +876,27 @@ async function checkConnection() {
 }
 
 // ---- boot ----
-initTheme();
-initSettings();
-checkConnection();
-if (!location.hash) location.hash = "#/";
-render();
+function startApp() {
+  checkConnection();
+  if (!location.hash) location.hash = "#/";
+  render();
+}
+
+async function boot() {
+  initTheme();
+  initSettings();
+  initSignOut();
+  let cfg;
+  try {
+    cfg = await api.authConfig();
+  } catch {
+    cfg = { auth_required: false, google_client_id: null };
+  }
+  if (cfg.auth_required && !sessionValid()) {
+    showLogin(cfg.google_client_id, startApp);
+    return;
+  }
+  startApp();
+}
+
+boot();

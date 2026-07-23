@@ -3,7 +3,7 @@
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, test } from "node:test";
 
-import { ApiError, api, setBase, setToken } from "../js/api.js";
+import { ApiError, api, setBase, setSession } from "../js/api.js";
 
 let calls;
 const originalFetch = globalThis.fetch;
@@ -34,7 +34,7 @@ beforeEach(() => {
   calls = [];
   stubLocalStorage();
   setBase("");
-  setToken("");
+  setSession("");
 });
 
 afterEach(() => {
@@ -52,9 +52,9 @@ test("builds query string, omitting empty params", async () => {
   assert.equal(calls[0].opts.headers.Authorization, undefined);
 });
 
-test("adds bearer token and base URL when configured", async () => {
+test("adds bearer session and base URL when configured", async () => {
   setBase("http://api.example");
-  setToken("secret");
+  setSession("secret");
   stubFetch({ status: 200, ok: true, body: "[]" });
   await api.properties();
   assert.equal(calls[0].url, "http://api.example/api/v1/properties");

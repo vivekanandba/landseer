@@ -1,5 +1,15 @@
 # Deploying Landseer to GCP (Cloud Run + Neon) with GCS backups
 
+> **⚠️ Superseded in two ways — read first.**
+> 1. **Deploys are automated** via `.github/workflows/deploy.yml` (push to `main`).
+>    This runbook is the *manual/bootstrap* reference.
+> 2. **Auth is Google-only now.** The `landseer-api-token` secret and the
+>    "paste a bearer token" steps below are **obsolete**. Instead use:
+>    `--set-secrets LANDSEER_DATABASE_URL=…,LANDSEER_SESSION_SECRET=landseer-session-secret:latest`
+>    and `--set-env-vars LANDSEER_AUTH_REQUIRED=true,LANDSEER_GOOGLE_CLIENT_ID=…,LANDSEER_ALLOWED_EMAILS=…`,
+>    and sign in with Google at `/app/` (no token to retrieve). A full rewrite of
+>    the steps below is a follow-up.
+
 End-to-end runbook for the architecture in
 [`gcp-cost-estimate.md`](gcp-cost-estimate.md): one Cloud Run service (API + SPA)
 backed by Neon Postgres, with a daily `pg_dump` to a GCS bucket in your project.

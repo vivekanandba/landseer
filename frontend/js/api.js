@@ -1,10 +1,9 @@
 // Typed-ish API client for the Landseer backend.
-// Base URL and bearer token are configurable and persisted in localStorage, so
-// the same static bundle works same-origin (served by the API) or against a
-// remote host. Auth is optional (the API is open unless LANDSEER_API_TOKEN is set).
+// Base URL is configurable (defaults to same-origin). Auth is a Google-issued
+// session token (see js/auth.js), sent as a bearer; both live in localStorage.
 
 const LS_BASE = "landseer_api_base";
-const LS_TOKEN = "landseer_api_token";
+const LS_SESSION = "landseer_session";
 
 export function getBase() {
   return localStorage.getItem(LS_BASE) || "";
@@ -12,11 +11,12 @@ export function getBase() {
 export function setBase(v) {
   localStorage.setItem(LS_BASE, v || "");
 }
-export function getToken() {
-  return localStorage.getItem(LS_TOKEN) || "";
+export function getSession() {
+  return localStorage.getItem(LS_SESSION) || "";
 }
-export function setToken(v) {
-  localStorage.setItem(LS_TOKEN, v || "");
+export function setSession(v) {
+  if (v) localStorage.setItem(LS_SESSION, v);
+  else localStorage.removeItem(LS_SESSION);
 }
 
 export class ApiError extends Error {
@@ -28,8 +28,8 @@ export class ApiError extends Error {
 
 async function request(path, opts = {}) {
   const headers = { Accept: "application/json", ...(opts.headers || {}) };
-  const token = getToken();
-  if (token) headers.Authorization = `Bearer ${token}`;
+  const session = getSession();
+  if (session) headers.Authorization = `Bearer ${session}`;
   if (opts.body !== undefined) headers["Content-Type"] = "application/json";
 
   let resp;
@@ -67,6 +67,10 @@ async function request(path, opts = {}) {
 export const api = {
   health: () => request("/health"),
   ready: () => request("/ready"),
+
+  authConfig: () => request("/api/v1/auth/config"),
+  createSession: (credential) =>
+    request("/api/v1/auth/session", { method: "POST", body: { credential } }),
 
   properties: (params = {}) => request("/api/v1/properties" + qs(params)),
   property: (id) => request(`/api/v1/properties/${id}`),
