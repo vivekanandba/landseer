@@ -1,8 +1,11 @@
 """Focused unit tests for property_service functions not covered elsewhere."""
 
 import pytest
+from sqlalchemy import select
 
-from app.models.property import Direction, PropertyStatus
+from app.models.document import Document, DocumentType
+from app.models.property import Direction, PropertyStatus, Subdivision
+from app.services import document_service as docs
 from app.services import property_service as svc
 
 
@@ -47,3 +50,21 @@ def test_add_subdivision_and_neighbor(session, make_property):
     assert sub.property_id == prop.id
     assert neighbor.direction is Direction.NORTH
     assert prop.subdivision_area_sqft == 5000
+
+
+def test_delete_property_cascades_children(session, make_property):
+    prop = make_property("Doomed")
+    svc.add_subdivision(session, prop, name="Plot A")
+    docs.upload_document(session, prop, "patta.pdf", doc_type=DocumentType.PATTA)
+    pid = prop.id
+
+    svc.delete_property(session, prop)
+
+    assert svc.get_property_by_name(session, "Doomed") is None
+    assert (
+        session.execute(select(Subdivision).where(Subdivision.property_id == pid)).scalars().all()
+        == []
+    )
+    assert (
+        session.execute(select(Document).where(Document.property_id == pid)).scalars().all() == []
+    )

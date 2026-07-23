@@ -72,6 +72,12 @@ def add_property(session: Session, comparison: Comparison, prop: Property) -> No
     session.refresh(comparison)
 
 
+def delete_comparison(session: Session, comparison: Comparison) -> None:
+    """Delete a comparison; its items cascade."""
+    session.delete(comparison)
+    session.flush()
+
+
 def add_notes(session: Session, comparison: Comparison, notes: str) -> Comparison:
     comparison.notes = notes
     session.flush()

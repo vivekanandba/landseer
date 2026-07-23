@@ -77,6 +77,7 @@ export const api = {
   createProperty: (payload) => request("/api/v1/properties", { method: "POST", body: payload }),
   updateProperty: (id, payload) =>
     request(`/api/v1/properties/${id}`, { method: "PATCH", body: payload }),
+  deleteProperty: (id) => request(`/api/v1/properties/${id}`, { method: "DELETE" }),
   addSubdivision: (id, payload) =>
     request(`/api/v1/properties/${id}/subdivisions`, { method: "POST", body: payload }),
   addNeighbor: (id, payload) =>
@@ -98,6 +99,9 @@ export const api = {
 
   brokers: (params = {}) => request("/api/v1/brokers" + qs(params)),
   createBroker: (payload) => request("/api/v1/brokers", { method: "POST", body: payload }),
+  deleteBroker: (id) => request(`/api/v1/brokers/${id}`, { method: "DELETE" }),
+  deleteComparison: (name) =>
+    request(`/api/v1/comparisons/${encodeURIComponent(name)}`, { method: "DELETE" }),
   linkBroker: (brokerId, propertyId, payload) =>
     request(`/api/v1/brokers/${brokerId}/properties/${propertyId}`, {
       method: "POST",

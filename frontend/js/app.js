@@ -16,6 +16,7 @@ import {
   tile,
   dataTable,
   formModal,
+  modal,
   csv,
   parseVertices,
   escapeHtml,
@@ -231,6 +232,21 @@ async function propertyDetailView(id) {
       h("button.ghost-btn", { onclick: () => openAddNeighbor(p.id) }, "+ Neighbor"),
       h("button.ghost-btn", { onclick: () => openUploadDocument(p.id) }, "+ Document"),
       h("button.ghost-btn", { onclick: () => openAddBoundary(p.id) }, "+ Boundary"),
+      h(
+        "button.ghost-btn.danger",
+        {
+          onclick: () =>
+            confirmDelete(
+              `Delete "${p.name}" and all its documents, neighbors, subdivisions and history? This can't be undone.`,
+              async () => {
+                await api.deleteProperty(p.id);
+                location.hash = "#/properties";
+                render();
+              },
+            ),
+        },
+        "Delete",
+      ),
     ]),
   ]);
 
@@ -545,11 +561,26 @@ async function brokersView() {
           key: "link",
           label: "",
           render: (r) =>
-            h(
-              "button.ghost-btn",
-              { onclick: (e) => (e.stopPropagation(), openLinkBroker(r)) },
-              "Link property",
-            ),
+            h("div", { style: "display:flex;gap:6px;justify-content:flex-end" }, [
+              h(
+                "button.ghost-btn",
+                { onclick: (e) => (e.stopPropagation(), openLinkBroker(r)) },
+                "Link property",
+              ),
+              h(
+                "button.ghost-btn.danger",
+                {
+                  onclick: (e) => (
+                    e.stopPropagation(),
+                    confirmDelete(`Delete broker "${r.name}"?`, async () => {
+                      await api.deleteBroker(r.id);
+                      render();
+                    })
+                  ),
+                },
+                "Delete",
+              ),
+            ]),
         },
       ],
       rows,
@@ -559,6 +590,30 @@ async function brokersView() {
 }
 
 // ---- write flows (forms) ----
+function confirmDelete(message, onConfirm) {
+  const err = h("div.banner-err", { style: "display:none" });
+  const delBtn = h("button.btn.danger", null, "Delete");
+  const close = modal(
+    h("div.modal", null, [
+      h("h3", null, "Confirm delete"),
+      h("p", null, message),
+      err,
+      h("div.row", null, [h("button.ghost-btn", { onclick: () => close() }, "Cancel"), delBtn]),
+    ]),
+  );
+  delBtn.addEventListener("click", async () => {
+    delBtn.disabled = true;
+    try {
+      await onConfirm();
+      close();
+    } catch (e) {
+      delBtn.disabled = false;
+      err.textContent = e.message || "Delete failed";
+      err.style.display = "block";
+    }
+  });
+}
+
 function propertyFields(p = {}) {
   const feat = "yes / no / nearby";
   return [

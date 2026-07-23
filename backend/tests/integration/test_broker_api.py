@@ -35,6 +35,12 @@ def test_unknown_broker_404(session):
     assert client.get("/api/v1/brokers/999999").status_code == 404
 
 
+def test_delete_broker(session):
+    bid = client.post("/api/v1/brokers", json={"name": "Temp Broker"}).json()["id"]
+    assert client.delete(f"/api/v1/brokers/{bid}").status_code == 204
+    assert client.get(f"/api/v1/brokers/{bid}").status_code == 404
+
+
 def test_relinking_broker_is_idempotent(session):
     bid = client.post("/api/v1/brokers", json={"name": "Meena"}).json()["id"]
     pid = client.post("/api/v1/properties", json={"name": "Ambur Plot"}).json()["id"]

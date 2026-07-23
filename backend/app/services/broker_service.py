@@ -74,6 +74,12 @@ def link_to_property(
     return link
 
 
+def delete_broker(session: Session, broker: Broker) -> None:
+    """Delete a broker; its property links (listings) cascade."""
+    session.delete(broker)
+    session.flush()
+
+
 def brokers_for_property(session: Session, prop: Property) -> List[BrokerProperty]:
     stmt = (
         select(BrokerProperty)
