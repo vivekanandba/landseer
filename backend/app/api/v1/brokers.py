@@ -2,7 +2,7 @@
 
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -46,6 +46,12 @@ def list_brokers(
 @router.get("/{broker_id}", response_model=BrokerRead)
 def get_broker(broker_id: int, db: Session = Depends(get_db)):
     return _broker(db, broker_id)
+
+
+@router.delete("/{broker_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_broker(broker_id: int, db: Session = Depends(get_db)):
+    brokers.delete_broker(db, _broker(db, broker_id))
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post(

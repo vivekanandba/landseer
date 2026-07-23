@@ -218,6 +218,13 @@ def update_property(session: Session, prop: Property, changes: dict) -> Property
     return prop
 
 
+def delete_property(session: Session, prop: Property) -> None:
+    """Delete a property. Subdivisions, neighbors, activity logs, documents, price
+    history, survey boundaries and comparison items cascade (ORM + DB FK)."""
+    session.delete(prop)
+    session.flush()
+
+
 def record_price(
     session: Session, prop: Property, price: float, source: str = "manual"
 ) -> PriceHistory:

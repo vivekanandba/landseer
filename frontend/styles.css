@@ -503,6 +503,20 @@ textarea:focus {
   opacity: 0.5;
   cursor: not-allowed;
 }
+.btn.danger {
+  background: var(--critical);
+}
+.btn.danger:hover {
+  background: color-mix(in srgb, var(--critical) 85%, black);
+}
+.ghost-btn.danger {
+  color: var(--critical);
+  border-color: color-mix(in srgb, var(--critical) 45%, var(--border-strong));
+}
+.ghost-btn.danger:hover {
+  background: color-mix(in srgb, var(--critical) 10%, transparent);
+  color: var(--critical);
+}
 .chip {
   display: inline-flex;
   align-items: center;

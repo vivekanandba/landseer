@@ -71,3 +71,13 @@ def test_list_properties_pagination_bounds(session):
 def test_ocr_parse_rejects_oversized_text(session):
     resp = client.post("/api/v1/ocr/parse", json={"text": "x" * 100_001})
     assert resp.status_code == 422
+
+
+def test_delete_property(session):
+    pid = client.post("/api/v1/properties", json={"name": "Disposable"}).json()["id"]
+    assert client.delete(f"/api/v1/properties/{pid}").status_code == 204
+    assert client.get(f"/api/v1/properties/{pid}").status_code == 404
+
+
+def test_delete_missing_property_returns_404(session):
+    assert client.delete("/api/v1/properties/999999").status_code == 404

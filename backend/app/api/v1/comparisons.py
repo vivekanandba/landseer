@@ -4,7 +4,7 @@ import os
 import tempfile
 from typing import Dict
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from starlette.background import BackgroundTask
@@ -52,6 +52,12 @@ def create_comparison(payload: ComparisonCreate, db: Session = Depends(get_db)):
 @router.get("/{name}", response_model=ComparisonRead)
 def get_comparison(name: str, db: Session = Depends(get_db)):
     return _require(db, name)
+
+
+@router.delete("/{name}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_comparison(name: str, db: Session = Depends(get_db)):
+    cmp.delete_comparison(db, _require(db, name))
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post("/{name}/properties/{property_id}", response_model=ComparisonRead)

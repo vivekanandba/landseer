@@ -76,3 +76,9 @@ def test_duplicate_comparison_409(session):
     client.post("/api/v1/comparisons", json={"name": "Dup"})
     again = client.post("/api/v1/comparisons", json={"name": "Dup"})
     assert again.status_code == 409
+
+
+def test_delete_comparison(session):
+    client.post("/api/v1/comparisons", json={"name": "Trash"})
+    assert client.delete("/api/v1/comparisons/Trash").status_code == 204
+    assert client.get("/api/v1/comparisons/Trash").status_code == 404

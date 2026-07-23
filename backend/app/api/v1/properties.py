@@ -2,7 +2,7 @@
 
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -63,6 +63,16 @@ def update_property(property_id: int, payload: PropertyUpdate, db: Session = Dep
         return svc.update_property(db, prop, payload.model_dump(exclude_unset=True))
     except svc.DuplicateProperty as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+
+
+@router.delete("/{property_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_property(property_id: int, db: Session = Depends(get_db)):
+    try:
+        prop = svc.get_property(db, property_id)
+    except svc.PropertyNotFound as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    svc.delete_property(db, prop)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post(
